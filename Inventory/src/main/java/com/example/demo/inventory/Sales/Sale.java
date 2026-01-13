@@ -13,7 +13,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "sales")
-@Data
+
 @NoArgsConstructor
 @AllArgsConstructor
 public class Sale {
@@ -32,4 +32,44 @@ public class Sale {
     private LocalDateTime saleDate;
 
     private double totalPrice;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
+    public List<SaleItem> getSaleItems() {
+        return saleItems;
+    }
+
+    public void setSaleItems(List<SaleItem> saleItems) {
+        this.saleItems = saleItems;
+    }
+
+    public LocalDateTime getSaleDate() {
+        return saleDate;
+    }
+
+    public void setSaleDate(LocalDateTime saleDate) {
+        this.saleDate = saleDate;
+    }
+
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
 }

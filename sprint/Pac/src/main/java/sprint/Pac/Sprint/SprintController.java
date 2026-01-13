@@ -1,6 +1,5 @@
 package sprint.Pac.Sprint;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,10 +8,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/sprints") // Base URL for all Sprint endpoints
-@RequiredArgsConstructor
 public class SprintController {
 
     private final SprintService sprintService;
+
+    public SprintController(SprintService sprintService) {
+        this.sprintService = sprintService;
+    }
 
     /**
      * GET /api/sprints

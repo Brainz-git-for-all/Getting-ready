@@ -1,6 +1,5 @@
 package sprint.Pac.Sprint;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,11 +7,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
+
 public class SprintService {
 
     private final SprintRepository sprintRepository;
     private final TaskRepository taskRepository;
+
+    public SprintService(SprintRepository sprintRepository, TaskRepository taskRepository) {
+        this.sprintRepository = sprintRepository;
+        this.taskRepository = taskRepository;
+    }
 
     /**
      * Retrieves all Sprints.

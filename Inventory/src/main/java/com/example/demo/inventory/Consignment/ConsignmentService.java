@@ -3,18 +3,22 @@ package com.example.demo.inventory.Consignment;
 import com.example.demo.inventory.Products.Product;
 import com.example.demo.inventory.Products.ProductRepository;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
-@RequiredArgsConstructor // Automatically creates constructor for final fields
+
 public class ConsignmentService {
 
     private final ConsignmentRepository consignmentRepository;
     private final ProductRepository productRepository;
+
+    public ConsignmentService(ConsignmentRepository consignmentRepository, ProductRepository productRepository) {
+        this.consignmentRepository = consignmentRepository;
+        this.productRepository = productRepository;
+    }
 
     // CREATE a new consignment with its products
     @Transactional

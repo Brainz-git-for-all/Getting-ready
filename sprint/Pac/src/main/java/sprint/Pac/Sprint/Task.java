@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "task")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+
 public class Task {
 
     @Id
@@ -22,4 +22,36 @@ public class Task {
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference
     private Sprint sprint;
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public Sprint getSprint() {
+        return sprint;
+    }
+
+    public void setSprint(Sprint sprint) {
+        this.sprint = sprint;
+    }
 }
