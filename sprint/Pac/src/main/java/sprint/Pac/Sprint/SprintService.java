@@ -73,7 +73,8 @@ public class SprintService {
                 .map(sprint -> {
                     // Update fields here:
                     sprint.setName(updatedSprint.getName());
-                    sprint.setDuration(updatedSprint.getDuration());
+                    sprint.setStartDate(updatedSprint.getStartDate());
+                    sprint.setEndDate(updatedSprint.getEndDate());
                     sprint.setStability(updatedSprint.getStability());
                     // Tasks are handled separately, likely via a Task-specific endpoint
                     return sprintRepository.save(sprint);
