@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "task")
 @AllArgsConstructor
@@ -19,6 +21,7 @@ public class Task {
     private long id;
     private String name;
     private String priority;
+    private LocalDate dueDate;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference
