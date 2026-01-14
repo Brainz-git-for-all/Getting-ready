@@ -12,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Table (name = "st")
+@Data
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,43 +28,5 @@ public class Sprint {
     @JsonManagedReference
     private List<Task> tasks = new ArrayList<>();
 
-    public long getId() {
-        return id;
-    }
 
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDuration() {
-        return duration;
-    }
-
-    public void setDuration(String duration) {
-        this.duration = duration;
-    }
-
-    public String getStability() {
-        return stability;
-    }
-
-    public void setStability(String stability) {
-        this.stability = stability;
-    }
-
-    public List<Task> getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(List<Task> tasks) {
-        this.tasks = tasks;
-    }
 }
