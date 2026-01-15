@@ -1,4 +1,6 @@
 package com.brainz.links;
 
-public interface LinkRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface LinkRepository extends JpaRepository<Link , Long> {
 }
