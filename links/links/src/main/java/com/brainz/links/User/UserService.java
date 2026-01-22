@@ -25,4 +25,26 @@ public class UserService {
                        user.getRole()
                        )).collect(Collectors.toList());
     }
+
+    public void deleteUserById(Long id){
+        if (userRepository.existsById(id)){
+           userRepository.deleteById(id);
+        }
+        else {
+            throw new RuntimeException("user does exist by" + id);
+        }
+
+    }
+
+    public User updateUserById(User user, long id){
+       return userRepository.findById(id)
+               .map(existingUser -> {
+                   existingUser.setName(user.getName());
+                   existingUser.setRole(user.getRole());
+                   existingUser.setPassword(user.getPassword());
+
+                   return userRepository.save(existingUser);
+                       })
+               .orElseThrow(() -> new RuntimeException("error"));
+    }
 }
