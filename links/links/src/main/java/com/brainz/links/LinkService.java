@@ -9,10 +9,17 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class LinkService {
+
     private  static LinkRepository linkRepository ;
 
-    public void createLink(Link link){
-        linkRepository.save(link);
+    public Link createLink(Link link){
+       return linkRepository.save(link);
+    }
+
+
+    public Link getLinkById(Long id) {
+        return linkRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Link not found with ID: " + id));
     }
 
     public List<Link> getAllLinks(){
@@ -33,7 +40,7 @@ public class LinkService {
         linkRepository.delete(deleteLink);
     }
 
-    public Link UpdateLinkById(Link link, long id){
+    public Link updateLinkById(Link link, long id){
        Link linkToBeUpdated = linkRepository.findById(id)
                .orElseThrow(() -> new RuntimeException("Link does not exist"));
         linkToBeUpdated.setLink(link.getLink());

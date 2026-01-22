@@ -6,10 +6,10 @@ import org.aspectj.weaver.NewConstructorTypeMunger;
 import org.springframework.context.annotation.ReflectiveScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.security.core.parameters.P;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @ReflectiveScan
 @RequestMapping("api/Links")
@@ -22,9 +22,24 @@ public class LinkController {
         this.linkService = linkService;
     }
 
-    @PostMapping()
+    @PostMapping
+    public ResponseEntity<Link> createLink(Link link){
+     Link savedLink =  linkService.createLink(link);
+        return new ResponseEntity<>(savedLink, HttpStatus.CREATED);
+    }
 
-    @DeleteMapping("{id}")
+    @GetMapping
+    public ResponseEntity<List<Link>> getAlllinks(){
+        List<Link> links = linkService.getAllLinks();
+        return new ResponseEntity<>(links, HttpStatus.OK);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<Link> getByLinkId(@PathVariable long id){
+       Link link = linkService.getLinkById(id);
+        return new ResponseEntity<>(link , HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLinkById(@PathVariable long id){
         try{
             linkService.deleteByLink(id);
@@ -34,5 +49,10 @@ public class LinkController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
+        @PutMapping("/{id}")
+         public ResponseEntity<Link>  updateLinkById(@PathVariable long id , @RequestBody Link link){
+            return linkService.updateLinkById()
+
+        }
     }
 }
