@@ -27,6 +27,11 @@ public class LinkService {
             throw new RuntimeException("link not found with id: " + id);
         }
     }
+    public  void delete(long id){
+        Link deleteLink = linkRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("This link does not exist by" + id));
+        linkRepository.delete(deleteLink);
+    }
 
     public Link UpdateLinkById(Link link, long id){
        Link linkToBeUpdated = linkRepository.findById(id)
