@@ -1,4 +1,4 @@
-package com.brainz.links;
+package com.brainz.links.Link;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

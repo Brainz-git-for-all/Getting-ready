@@ -40,19 +40,19 @@ public class LinkController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLinkById(@PathVariable long id) {
-        try {
+    public ResponseEntity<Void> deleteLinkById(@PathVariable long id){
+        try{
             linkService.deleteByLink(id);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (RuntimeException e) {
+        }
+        catch (RuntimeException e){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-    }
 
         @PutMapping("/{id}")
          public ResponseEntity<Link>  updateLinkById(@PathVariable long id , @RequestBody Link link){
-            return linkService.updateLinkById();
+            return linkService.updateLinkById()
 
         }
-
+    }
 }
