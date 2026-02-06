@@ -1,6 +1,5 @@
-package com.brainz.links;
+package com.brainz.links.Link;
 
-import jakarta.persistence.Entity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
