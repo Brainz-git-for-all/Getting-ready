@@ -65,4 +65,22 @@ public class HabitLogService {
         Habit newHabit = new Habit(name, maxIndex + 1, user);
         return habitRepository.save(newHabit);
     }
+
+    public Habit addNewHabit(User user, String habitName) {
+        // 1. Ask the DB: "What is the highest index currently used?"
+        // If it's empty (Optional.empty), we start at -1 so the first habit becomes 0.
+        int lastIndex = habitRepository.findMaxBitIndexByUserId(user.getId())
+                .orElse(-1);
+
+        // 2. Assign the next available slot
+        int nextIndex = lastIndex + 1;
+
+        // 3. Prevent exceeding the 31-bit limit (for a Java signed int)
+        if (nextIndex > 30) {
+            throw new RuntimeException("Maximum of 31 habits reached for this user.");
+        }
+
+        Habit habit = new Habit(habitName, nextIndex, user);
+        return habitRepository.save(habit);
+    }
 }
