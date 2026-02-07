@@ -14,6 +14,9 @@ import java.util.Optional;
 public class HabitLogService {
 
     @Autowired
+    private HabitRepository habitRepository;
+
+    @Autowired
     private DailySessionRepository sessionRepository;
 
     @Autowired
@@ -51,5 +54,15 @@ public class HabitLogService {
     @Transactional
     public void deleteLog(Long sessionId) {
         sessionRepository.deleteById(sessionId);
+    }
+
+    // Inside your HabitService
+    public Habit createHabit(User user, String name) {
+        // Find the max index currently used by this user
+        int maxIndex = habitRepository.findMaxBitIndexByUserId(user.getId()).orElse(-1);
+
+        // Create the new habit at the next slot
+        Habit newHabit = new Habit(name, maxIndex + 1, user);
+        return habitRepository.save(newHabit);
     }
 }
