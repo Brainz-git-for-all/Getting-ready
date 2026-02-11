@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
@@ -40,20 +43,20 @@ public class AuthController {
         return token;
     }
 
+
     @PostMapping("/login")
-    public String authenticateUser(@RequestBody LoginRequest loginRequest) {
-        // 1. Ask the manager to check the credentials
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
+    public JwtResponse authenticateUser(@RequestBody LoginRequest loginRequest) {
+        // ... authentication logic ...
+
+        String accessToken = jwtUtil.generateTokenByUserName(loginRequest.getUsername());
+
+        // Now this matches! The service returns the RefreshToken Object.
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(loginRequest.getUsername());
+
+        return new JwtResponse(
+                accessToken,
+                refreshToken.getToken(), // Get the string from the object
+                loginRequest.getUsername()
         );
-
-        // 2. If successful, set it in the security context
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // 3. Generate the token to give back to the user
-        return jwtUtil.generateTokenByUserName(loginRequest.getUsername());
     }
 }

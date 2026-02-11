@@ -23,6 +23,9 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private int jwtExpirationMs;
 
+    @Value("${jwt.RefreshExpiration}")
+    private int jwtRefreshExpirationMs;
+
     private SecretKey key;
 
 
@@ -36,6 +39,15 @@ public class JwtUtil {
                 .subject(UserName)
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .signWith(key)
+                .compact();
+    }
+    public String generateRefreshToken(String username) {
+        return Jwts.builder()
+                .subject(username)
+                .issuedAt(new Date())
+                // Notice we use a different, much longer expiration variable here
+                .expiration(new Date((new Date()).getTime() + jwtRefreshExpirationMs))
                 .signWith(key)
                 .compact();
     }
