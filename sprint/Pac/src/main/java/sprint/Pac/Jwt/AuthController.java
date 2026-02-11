@@ -34,8 +34,10 @@ public class AuthController {
         // IMPORTANT: Always encode the password before saving!
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
+        String token = jwtUtil.generateTokenByUserName(user.getUsername());
 
-        return "User registered successfully!";
+        // 3. Return the token so the frontend can store it
+        return token;
     }
 
     @PostMapping("/login")

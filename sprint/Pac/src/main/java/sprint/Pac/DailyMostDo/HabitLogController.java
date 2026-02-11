@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/logs")
+@RequestMapping("/api/habit")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000") // Allows React to connect
 public class HabitLogController {
@@ -21,11 +21,7 @@ public class HabitLogController {
     public ResponseEntity<List<Habit>> getAllHabits(){
         return new ResponseEntity<>(habitLogService.getAllHabits(), HttpStatus.OK);
     }
-    @GetMapping
-    public ResponseEntity<List<Habit>> getAllHabits1(){
-        List<Habit> habits = habitLogService.getAllHabits();
-        return  ResponseEntity.ok().body(habits);
-    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Habit> getHabitById(@PathVariable long id){
