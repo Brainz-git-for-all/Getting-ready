@@ -1,12 +1,12 @@
-package com.brainz.links;
+package com.brainz.links.Link;
 
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.aspectj.weaver.NewConstructorTypeMunger;
+import com.brainz.links.Link.Link;
+import com.brainz.links.Link.LinkService;
+
 import org.springframework.context.annotation.ReflectiveScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,19 +40,19 @@ public class LinkController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLinkById(@PathVariable long id){
-        try{
+    public ResponseEntity<Void> deleteLinkById(@PathVariable long id) {
+        try {
             linkService.deleteByLink(id);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        catch (RuntimeException e){
+        } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+    }
 
         @PutMapping("/{id}")
          public ResponseEntity<Link>  updateLinkById(@PathVariable long id , @RequestBody Link link){
-            return linkService.updateLinkById()
+            return new ResponseEntity<>(linkService.updateLinkById(link,id), HttpStatus.OK);
 
         }
-    }
+
 }
