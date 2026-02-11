@@ -1,14 +1,23 @@
 package sprint.Pac.DailyMostDo;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import sprint.Pac.Jwt.User;
 
 import java.time.LocalDate;
+import java.util.List;
+
+
+
 
 @Entity
 @Table(name = "daily_sessions", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "logDate"})
 })
+
 public class DailySession {
 
     @Id
@@ -21,35 +30,50 @@ public class DailySession {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private int completionMask;
+    @ElementCollection
+    @CollectionTable(name = "daily_session_habit_ids", joinColumns = @JoinColumn(name = "session_id"))
+    @Column(name = "habit_id")
+    private List<Long> completedHabitIds;
 
-    // Constructors
-    public DailySession() {}
-
-    public DailySession(User user, LocalDate logDate) {
+    public DailySession(User user, LocalDate logDate, List<Long> habitsId) {
         this.user = user;
+        this.logDate = logDate;
+        this.completedHabitIds = habitsId;
+    }
+
+    public DailySession(){
+
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public LocalDate getLogDate() {
+        return logDate;
+    }
+
+    public void setLogDate(LocalDate logDate) {
         this.logDate = logDate;
     }
 
-    // Helper methods for Bitwise logic
-    public void setHabitComplete(int habitIndex) {
-        this.completionMask |= (1 << habitIndex);
+    public User getUser() {
+        return user;
     }
 
-    public boolean isHabitComplete(int habitIndex) {
-        return (completionMask & (1 << habitIndex)) != 0;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    // Standard Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public List<Long> getCompletedHabitIds() {
+        return completedHabitIds;
+    }
 
-    public LocalDate getLogDate() { return logDate; }
-    public void setLogDate(LocalDate logDate) { this.logDate = logDate; }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-
-    public int getCompletionMask() { return completionMask; }
-    public void setCompletionMask(int completionMask) { this.completionMask = completionMask; }
+    public void setCompletedHabitIds(List<Long> completedHabitIds) {
+        this.completedHabitIds = completedHabitIds;
+    }
 }
