@@ -1,42 +1,63 @@
 package sprint.Pac.DailyMostDo;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/logs")
+@RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000") // Allows React to connect
 public class HabitLogController {
 
     @Autowired
-    private HabitLogService logService;
+    private final HabitLogService habitLogService;
 
-    // 1. GET TODAY'S DATA
-    @GetMapping("/{userId}/today")
-    public ResponseEntity<DailySession> getToday(@PathVariable Long userId) {
-        return logService.getLogByDate(userId, LocalDate.now())
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping
+    public ResponseEntity<List<Habit>> getAllHabits(){
+        return new ResponseEntity<>(habitLogService.getAllHabits(), HttpStatus.OK);
+    }
+    @GetMapping
+    public ResponseEntity<List<Habit>> getAllHabits1(){
+        List<Habit> habits = habitLogService.getAllHabits();
+        return  ResponseEntity.ok().body(habits);
     }
 
-    // 2. SAVE PROGRESS (The "End of Day" Popup Submit)
-    // React sends: [true, false, true]
-    @PostMapping("/{userId}/save")
-    public ResponseEntity<DailySession> saveProgress(
-            @PathVariable Long userId,
-            @RequestBody List<Boolean> ticks) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Habit> getHabitById(@PathVariable long id){
 
-        DailySession saved = logService.saveDailyProgress(userId, ticks);
-        return ResponseEntity.ok(saved);
+        return new ResponseEntity<>(habitLogService.getHabitsById(id),HttpStatus.OK);
     }
 
-    // 3. DELETE LOG
-    @DeleteMapping("/{sessionId}")
-    public ResponseEntity<Void> deleteLog(@PathVariable Long sessionId) {
-        logService.deleteLog(sessionId);
-        return ResponseEntity.noContent().build();
+    @PostMapping
+    public ResponseEntity<Habit> createNewHabit(@RequestBody Habit habit){
+
+        return new ResponseEntity<>(habitLogService.createHabit(habit), HttpStatus.CREATED);
     }
-}
+
+    @PostMapping("/log/user/{id}")
+    public ResponseEntity<DailySession> createNewSession(@RequestBody List<Long> habit, @PathVariable long id){
+        return new ResponseEntity<>(habitLogService.saveDailyProgress(id , habit), HttpStatus.CREATED);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteHabit(@PathVariable long id){
+
+        try {
+            habitLogService.deleteHabit(id);
+            return new ResponseEntity<>( HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Habit> updateHabit(@PathVariable long id, @RequestBody Habit habit){
+        return new ResponseEntity<>(habitLogService.updateHabit(habit, id), HttpStatus.OK);
+    }
+  }

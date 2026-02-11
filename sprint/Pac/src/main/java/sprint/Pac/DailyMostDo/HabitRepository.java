@@ -10,7 +10,5 @@ import java.util.Optional;
 @Repository
 public interface HabitRepository extends JpaRepository<Habit, Long> {
 
-    // This query looks for the largest bitIndex assigned to a specific user
-    @Query("SELECT MAX(h.bitIndex) FROM Habit h WHERE h.user.id = :userId")
-    Optional<Integer> findMaxBitIndexByUserId(@Param("userId") Long userId);
+
 }
