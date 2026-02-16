@@ -23,7 +23,6 @@ public class Sprint {
     private String name;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String stability;
     @OneToMany(mappedBy = "sprint", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Task> tasks = new ArrayList<>();
