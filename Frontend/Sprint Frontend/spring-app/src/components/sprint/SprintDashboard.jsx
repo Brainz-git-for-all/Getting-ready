@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { sprintService } from './SprintService.jsx';
+import { sprintService } from '../../api';
 import './SprintDashboard.css';
 import SprintForm from './SpringForm.jsx';
 

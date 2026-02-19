@@ -1,18 +1,33 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import SprintForm from './components/sprint/SpringForm'
-import './App.css'
-import SprintDashboard from './components/sprint/SprintDashboard'
+import React, { useState } from 'react';
+import Login from './components/Login/Login';
+import SprintDashboard from './components/sprint/SprintDashboard';
+import { authService } from './api';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // We check if a username exists in storage to persist the UI state
+  const [user, setUser] = useState(localStorage.getItem('username'));
+
+  const handleLogout = async () => {
+    await authService.logout(); // Tells backend to clear the cookie
+    localStorage.clear();
+    setUser(null);
+  };
 
   return (
-    <>
-    <SprintDashboard />
-    </>
-  )
+    <div className="app-container">
+      {!user ? (
+        <Login onLoginSuccess={() => setUser(localStorage.getItem('username'))} />
+      ) : (
+        <>
+          <nav className="top-nav">
+            <span>Logged in as: <strong>{user}</strong></span>
+            <button onClick={handleLogout}>Logout</button>
+          </nav>
+          <SprintDashboard />
+        </>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;

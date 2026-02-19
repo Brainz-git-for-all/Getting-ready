@@ -2,6 +2,9 @@
 package sprint.Pac.Jwt;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,34 +32,49 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public String registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
-            return "Error: Username is already taken!";
+            return ResponseEntity.badRequest().body("Error: Username is already taken!");
         }
 
-        // IMPORTANT: Always encode the password before saving!
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
-        String token = jwtUtil.generateTokenByUserName(user.getUsername());
 
-        // 3. Return the token so the frontend can store it
-        return token;
+        // Return a JSON object so Axios doesn't crash trying to parse a raw string
+        return ResponseEntity.ok(new UserResponse(user.getUsername()));
     }
 
-
     @PostMapping("/login")
-    public JwtResponse authenticateUser(@RequestBody LoginRequest loginRequest) {
-        // ... authentication logic ...
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String accessToken = jwtUtil.generateTokenByUserName(loginRequest.getUsername());
 
-        // Now this matches! The service returns the RefreshToken Object.
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(loginRequest.getUsername());
+        // FIX: Set path to "/" to ensure the cookie is sent for all API calls
+        ResponseCookie jwtCookie = ResponseCookie.from("accessToken", accessToken)
+                .path("/")
+                .maxAge(24 * 60 * 60)
+                .httpOnly(true)
+                .secure(false) // Set to true if using HTTPS
+                .sameSite("Lax")
+                .build();
 
-        return new JwtResponse(
-                accessToken,
-                refreshToken.getToken(), // Get the string from the object
-                loginRequest.getUsername()
-        );
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(new UserResponse(loginRequest.getUsername()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser() {
+        ResponseCookie cookie = ResponseCookie.from("accessToken", "")
+                .path("/")
+                .maxAge(0)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body("Logged out successfully");
     }
 }
