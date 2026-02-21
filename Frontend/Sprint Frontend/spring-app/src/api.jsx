@@ -43,5 +43,17 @@ export const authService = {
     login: (creds) => api.post('/auth/login', creds),
     logout: () => api.post('/auth/logout')
 };
+// ... existing axios setup ...
+
+export const habitService = {
+    // Basic Habit CRUD
+    getAll: () => api.get('/habit'),
+    create: (habitData) => api.post('/habit', habitData),
+    delete: (id) => api.delete(`/habit/${id}`),
+
+    // Logging the daily progress
+    // habits: Array of IDs, userId: from localStorage
+    logProgress: (userId, habitIds) => api.post(`/habit/log/user/${userId}`, habitIds)
+};
 
 export default api;
