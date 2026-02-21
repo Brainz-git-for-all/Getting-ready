@@ -53,23 +53,19 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String accessToken = jwtUtil.generateTokenByUserName(loginRequest.getUsername());
-
-        // Create the Refresh Token and save it to DB
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(loginRequest.getUsername());
 
-        // Cookie for Access Token
         ResponseCookie jwtCookie = ResponseCookie.from("accessToken", accessToken)
                 .path("/")
-                .maxAge(24 * 60 * 60) // Matches your JWT expiration
+                .maxAge(24 * 60 * 60)
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Lax")
                 .build();
 
-        // Cookie for Refresh Token - Restricted to the refresh endpoint
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken.getToken())
                 .path("/api/auth/refresh")
-                .maxAge(7 * 24 * 60 * 60) // 7 Days
+                .maxAge(7 * 24 * 60 * 60)
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Lax")
@@ -82,7 +78,12 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshAccessToken(@CookieValue(name = "refreshToken") String requestRefreshToken) {
+    public ResponseEntity<?> refreshAccessToken(@CookieValue(name = "refreshToken", required = false) String requestRefreshToken) {
+        // If cookie is missing (user logged out), stop the process here
+        if (requestRefreshToken == null || requestRefreshToken.isEmpty()) {
+            return ResponseEntity.status(401).body("Refresh token missing");
+        }
+
         return refreshTokenService.findByToken(requestRefreshToken)
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
@@ -94,22 +95,14 @@ public class AuthController {
                             .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                             .body("Token refreshed successfully");
                 })
-                .orElseThrow(() -> new RuntimeException("Refresh token is not in database or expired!"));
+                .orElseGet(() -> ResponseEntity.status(401).body("Invalid or expired refresh token"));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
-        ResponseCookie jwtCookie = ResponseCookie.from("accessToken", "")
-                .path("/")
-                .maxAge(0)
-                .httpOnly(true)
-                .build();
-
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
-                .path("/api/auth/refresh") // MUST match the path in /login
-                .maxAge(0)
-                .httpOnly(true)
-                .build();
+        // Clear both cookies by setting maxAge to 0
+        ResponseCookie jwtCookie = ResponseCookie.from("accessToken", "").path("/").maxAge(0).build();
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "").path("/api/auth/refresh").maxAge(0).build();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
