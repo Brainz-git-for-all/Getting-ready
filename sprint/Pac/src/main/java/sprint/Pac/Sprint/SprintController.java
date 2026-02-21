@@ -53,37 +53,6 @@ public class SprintController {
         return new ResponseEntity<>(savedSprint, HttpStatus.CREATED);
     }
 
-    /**
-     * PUT /api/sprints/{id}
-     * Updates an existing sprint.
-     * @param id The ID of the Sprint to update.
-     * @param sprintDetails The updated Sprint data.
-     * @return The updated Sprint, or 404 Not Found.
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<Sprint> updateSprint(@PathVariable long id, @RequestBody Sprint sprintDetails) {
-        return sprintService.updateSprint(id, sprintDetails)
-                .map(ResponseEntity::ok) // If updated, return 200 OK
-                .orElseGet(() -> ResponseEntity.notFound().build()); // If not found, return 404 Not Found
-    }
-
-    /**
-     * DELETE /api/sprints/{id}
-     * Deletes a sprint by ID.
-     * @param id The ID of the Sprint to delete.
-     * @return HTTP 204 No Content, or 404 Not Found (if service throws an exception).
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSprint(@PathVariable long id) {
-        try {
-            sprintService.deleteSprint(id);
-            // HTTP 204 No Content is the standard response for a successful DELETE
-            return ResponseEntity.noContent().build();
-        } catch (IllegalStateException e) {
-            // Catches the exception thrown by the Service layer if not found
-            return ResponseEntity.notFound().build(); // HTTP 404 Not Found
-        }
-    }
 
     /**
      * POST /api/sprints/{sprintId}/tasks
@@ -114,6 +83,24 @@ public class SprintController {
         } catch (IllegalArgumentException e) {
             // Task not found in Sprint, or Sprint not found (depending on detailed error handling)
             return ResponseEntity.notFound().build(); // HTTP 404 Not Found
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Sprint> updateSprint(@PathVariable long id, @RequestBody Sprint sprintDetails) {
+        // We ensure the ID from the URL is set on the object
+        return sprintService.updateSprint(id, sprintDetails)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSprint(@PathVariable long id) {
+        try {
+            sprintService.deleteSprint(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

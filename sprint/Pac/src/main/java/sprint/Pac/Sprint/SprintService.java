@@ -75,7 +75,6 @@ public class SprintService {
                     sprint.setName(updatedSprint.getName());
                     sprint.setStartDate(updatedSprint.getStartDate());
                     sprint.setEndDate(updatedSprint.getEndDate());
-                    sprint.setStability(updatedSprint.getStability());
                     // Tasks are handled separately, likely via a Task-specific endpoint
                     return sprintRepository.save(sprint);
                 });

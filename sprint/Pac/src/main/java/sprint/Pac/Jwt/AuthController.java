@@ -1,4 +1,3 @@
-// AuthController.java
 package sprint.Pac.Jwt;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +16,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     @Autowired
-    private RefreshTokenService refreshTokenService;
-
-    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
@@ -31,16 +27,21 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        if (userRepository.findByUsername(user.getUsername()) != null) {
+        if (user.getUsername() == null || user.getUsername().isBlank()) {
+            return ResponseEntity.badRequest().body("Error: Username is required!");
+        }
+        if (userRepository.existsByUsername(user.getUsername())) {
             return ResponseEntity.badRequest().body("Error: Username is already taken!");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
 
-        // Return a JSON object so Axios doesn't crash trying to parse a raw string
         return ResponseEntity.ok(new UserResponse(user.getUsername()));
     }
 
@@ -53,28 +54,57 @@ public class AuthController {
 
         String accessToken = jwtUtil.generateTokenByUserName(loginRequest.getUsername());
 
-        // FIX: Set path to "/" to ensure the cookie is sent for all API calls
+        // Create the Refresh Token and save it to DB
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(loginRequest.getUsername());
+
+        // Cookie for Access Token
         ResponseCookie jwtCookie = ResponseCookie.from("accessToken", accessToken)
                 .path("/")
-                .maxAge(24 * 60 * 60)
+                .maxAge(24 * 60 * 60) // Matches your JWT expiration
                 .httpOnly(true)
-                .secure(false) // Set to true if using HTTPS
+                .secure(false)
+                .sameSite("Lax")
+                .build();
+
+        // Cookie for Refresh Token - Restricted to the refresh endpoint
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken.getToken())
+                .path("/api/auth/refresh")
+                .maxAge(7 * 24 * 60 * 60) // 7 Days
+                .httpOnly(true)
+                .secure(false)
                 .sameSite("Lax")
                 .build();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(new UserResponse(loginRequest.getUsername()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshAccessToken(@CookieValue(name = "refreshToken") String requestRefreshToken) {
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtil.generateTokenByUserName(user.getUsername());
+                    ResponseCookie jwtCookie = ResponseCookie.from("accessToken", token)
+                            .path("/").maxAge(24 * 60 * 60).httpOnly(true).build();
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                            .body("Token refreshed successfully");
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database or expired!"));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
-        ResponseCookie cookie = ResponseCookie.from("accessToken", "")
-                .path("/")
-                .maxAge(0)
-                .build();
+        ResponseCookie jwtCookie = ResponseCookie.from("accessToken", "").path("/").maxAge(0).build();
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "").path("/api/auth/refresh").maxAge(0).build();
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body("Logged out successfully");
     }
 }

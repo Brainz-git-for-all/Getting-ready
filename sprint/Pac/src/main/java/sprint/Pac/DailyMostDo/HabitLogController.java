@@ -41,17 +41,14 @@ public class HabitLogController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteHabit(@PathVariable long id){
-
+    public ResponseEntity<Void> deleteHabit(@PathVariable long id) {
         try {
             habitLogService.deleteHabit(id);
-            return new ResponseEntity<>( HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Success
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Habit didn't exist
         }
-
     }
-
     @PutMapping("/{id}")
     public ResponseEntity<Habit> updateHabit(@PathVariable long id, @RequestBody Habit habit){
         return new ResponseEntity<>(habitLogService.updateHabit(habit, id), HttpStatus.OK);
