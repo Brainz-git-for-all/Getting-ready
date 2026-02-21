@@ -6,6 +6,7 @@ import SprintForm from './SpringForm.jsx';
 const SprintDashboard = () => {
   const [sprints, setSprints] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingSprint, setEditingSprint] = useState(null);
 
   const fetchSprints = async () => {
     try {
@@ -16,34 +17,54 @@ const SprintDashboard = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this sprint?")) {
+      try {
+        await sprintService.delete(id);
+        fetchSprints(); // Refresh list
+      } catch (error) {
+        console.error("Delete failed:", error);
+      }
+    }
+  };
+
+  const handleEdit = (sprint) => {
+    setEditingSprint(sprint);
+    setShowForm(true);
+  };
+
   useEffect(() => {
     fetchSprints();
   }, []);
 
   return (
     <div className="dashboard-container">
-      {/* NEW HEADER STRUCTURE */}
       <header className="main-header">
         <div className="header-content">
-          <div className="title-section">
-            <h1>Project Roadmap</h1>
-            <p className="subtitle">Manage your sprints and team velocity</p>
-          </div>
+          <h1>Project Roadmap</h1>
+          <p className="subtitle">Manage your sprints and team velocity</p>
         </div>
       </header>
-      < div className="action-bar">
-        <button className="btn-add-sprint" onClick={() => setShowForm(!showForm)}>
-        {showForm ? '← Back to Roadmap' : '+ Create New Sprint'}
-      </button>
-      </div>
 
+      <div className="action-bar">
+        <button className="btn-add-sprint" onClick={() => {
+          setEditingSprint(null);
+          setShowForm(!showForm);
+        }}>
+          {showForm ? '← Back to Roadmap' : '+ Create New Sprint'}
+        </button>
+      </div>
 
       <main className="dashboard-content">
         {showForm ? (
-          <SprintForm onSprintCreated={() => {
-            setShowForm(false);
-            fetchSprints();
-          }} />
+          <SprintForm
+            initialData={editingSprint}
+            onSprintCreated={() => {
+              setShowForm(false);
+              setEditingSprint(null);
+              fetchSprints();
+            }}
+          />
         ) : (
           <div className="table-wrapper">
             <table className="sprint-table">
@@ -63,13 +84,14 @@ const SprintDashboard = () => {
                       <td>{s.startDate} — {s.endDate}</td>
                       <td><span className="task-badge">{s.tasks?.length || 0}</span></td>
                       <td>
-                        <button className="btn-delete" onClick={() => {/* handle delete */ }}>Delete</button>
+                        <button className="btn-edit" onClick={() => handleEdit(s)}>Edit</button>
+                        <button className="btn-delete" onClick={() => handleDelete(s.id)}>Delete</button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="empty-row">No sprints found. Create one to get started!</td>
+                    <td colSpan="4" className="empty-row">No sprints found.</td>
                   </tr>
                 )}
               </tbody>

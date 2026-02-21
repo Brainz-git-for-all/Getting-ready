@@ -1,118 +1,121 @@
-:root {
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --bg: #f8fafc;
-    --text: #1e293b;
-    --white: #ffffff;
-}
-
-.sprint-container {
-    display: flex;
-    justify-content: center;
-    padding: 40px;
-    background: var(--bg);
-    min-height: 70vh;
-    font-family: 'Inter', sans-serif;
-}
-
-.sprint-card {
-    background: var(--white);
-    padding: 30px;
+/* --- Main Form Container --- */
+.form-card {
+    background: #ffffff;
+    padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-    width: 100%;
-    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    max-width: 600px;
+    margin: 2rem auto;
+    border: 1px solid #e5e7eb;
 }
 
+.form-card h2 {
+    margin-top: 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* --- Form Groups & Inputs --- */
 .form-group {
+    margin-bottom: 1.5rem;
     display: flex;
     flex-direction: column;
-    margin-bottom: 15px;
 }
 
 .form-group label {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    margin-bottom: 5px;
-    color: #64748b;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+    text-align: left;
 }
 
-input,
-select {
-    padding: 10px;
-    border: 1px solid #e2e8f0;
+.form-group input {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 1rem;
+    transition: all 0.2s;
 }
 
-.date-row {
+.form-group input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-group-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    gap: 1.5rem;
 }
 
-/* Tasks list styling */
-.task-list {
-    list-style: none;
-    padding: 0;
-    margin: 15px 0;
-}
-
-.task-list li {
-    background: #f1f5f9;
-    padding: 8px 12px;
-    margin-bottom: 5px;
-    border-radius: 6px;
+/* --- Task List Section --- */
+.task-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 1.5rem 0 1rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
 }
 
-.badge {
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: bold;
-    color: white;
+.task-header-row h3 {
+    font-size: 1.1rem;
+    color: #374151;
+    margin: 0;
 }
 
-.high {
-    background: #ef4444;
-}
-
-.medium {
-    background: #f59e0b;
-}
-
-.low {
-    background: #10b981;
-}
-
-/* Buttons */
-button {
-    cursor: pointer;
-    border: none;
-    font-weight: 600;
-    transition: 0.2s;
-}
-
-.btn-primary {
-    width: 100%;
-    background: var(--primary);
-    color: white;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 20px;
-}
-
-.btn-secondary {
-    background: #e2e8f0;
-    color: var(--text);
-    padding: 8px 16px;
+.btn-open-modal {
+    background: #f3f4f6;
+    border: 1px dashed #d1d5db;
+    padding: 6px 14px;
     border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #4f46e5;
+    transition: all 0.2s;
 }
 
-/* Modal Styling */
+.btn-open-modal:hover {
+    background: #eef2ff;
+    border-color: #4f46e5;
+}
+
+.task-preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+}
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9fafb;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid #f3f4f6;
+}
+
+.btn-remove {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove:hover {
+    color: #b91c1c;
+}
+
+/* --- Modal Overlay & Content --- */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -120,37 +123,88 @@ button {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    /* Subtle blur for focus */
     display: flex;
     justify-content: center;
     align-items: center;
-    /*backdrop-filter: blur(4px); */
+    z-index: 1000;
 }
 
 .modal-content {
     background: white;
-    padding: 25px;
+    padding: 2rem;
     border-radius: 12px;
     width: 90%;
     max-width: 400px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    animation: scaleIn 0.2s ease-out;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #111827;
 }
 
 .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 12px;
+    margin-top: 2rem;
 }
 
 .btn-cancel {
-    background: #f1f5f9;
-    padding: 10px 20px;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    padding: 0.6rem 1.2rem;
     border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .btn-confirm {
-    background: var(--primary);
+    background: #4f46e5;
     color: white;
-    padding: 10px 20px;
+    border: none;
+    padding: 0.6rem 1.2rem;
     border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-confirm:hover {
+    background: #4338ca;
+}
+
+/* --- Submission Button --- */
+.btn-submit {
+    width: 100%;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #4338ca;
+}
+
+/* --- Animations --- */
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
