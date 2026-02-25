@@ -1,92 +1,85 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { habitService } from '../../api';
 import './HabitDashboard.css';
 
-const HabitDashboard = () => {
+const HabitDashboard = ({ userId }) => {
     const [habits, setHabits] = useState([]);
     const [completedIds, setCompletedIds] = useState([]);
-    const [newHabitName, setNewHabitName] = useState('');
-    const userId = localStorage.getItem('userId'); // Ensure your login stores this!
+    const today = new Date().toISOString().split('T')[0];
+    const navigate = useNavigate();
 
     useEffect(() => {
-        loadHabits();
-    }, []);
+        const loadData = async () => {
+            try {
+                const hRes = await habitService.getAll();
+                const sRes = await habitService.getTodaysLog(userId, today);
+                setHabits(hRes.data);
+                if (sRes.data?.completedHabitIds) {
+                    setCompletedIds(sRes.data.completedHabitIds);
+                }
+            } catch (err) {
+                console.error("Dashboard load failed:", err);
+            }
+        };
+        loadData();
+    }, [userId, today]);
 
-    const loadHabits = async () => {
-        try {
-            const res = await habitService.getAll();
-            setHabits(res.data);
-            // In a real app, you'd also fetch today's DailySession
-            // to populate completedIds initially.
-        } catch (err) {
-            console.error("Failed to load habits");
-        }
+    const progress = habits.length > 0
+        ? Math.round((completedIds.length / habits.length) * 100)
+        : 0;
+
+    const handleToggle = (id) => {
+        setCompletedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    const handleAddHabit = async (e) => {
-        e.preventDefault();
-        if (!newHabitName) return;
+    const saveProgress = async () => {
         try {
-            await habitService.create({ name: newHabitName, user: { id: userId } });
-            setNewHabitName('');
-            loadHabits();
+            await habitService.saveTodaysLog(userId, completedIds);
+            alert("Progress saved!");
         } catch (err) {
-            console.error("Error creating habit");
+            alert("Failed to save log");
         }
-    };
-
-    const handleToggle = async (habitId) => {
-        let updatedList;
-        if (completedIds.includes(habitId)) {
-            updatedList = completedIds.filter(id => id !== habitId);
-        } else {
-            updatedList = [...completedIds, habitId];
-        }
-
-        setCompletedIds(updatedList);
-
-        // Sync with backend immediately
-        try {
-            await habitService.logProgress(userId, updatedList);
-        } catch (err) {
-            console.error("Failed to save progress");
-        }
-    };
-
-    const deleteHabit = async (id) => {
-        await habitService.delete(id);
-        loadHabits();
     };
 
     return (
-        <div className="habit-container">
-            <div className="habit-card">
-                <h3>Daily Habits</h3>
-                <form onSubmit={handleAddHabit} className="habit-form">
-                    <input
-                        value={newHabitName}
-                        onChange={(e) => setNewHabitName(e.target.value)}
-                        placeholder="New Habit (e.g. Gym)"
-                    />
-                    <button type="submit" className="btn-login" style={{ width: 'auto' }}>Add</button>
-                </form>
-
-                <div className="habit-list">
-                    {habits.map(habit => (
-                        <div key={habit.id} className="habit-item">
-                            <div className="habit-info">
-                                <input
-                                    type="checkbox"
-                                    checked={completedIds.includes(habit.id)}
-                                    onChange={() => handleToggle(habit.id)}
-                                />
-                                <span>{habit.name}</span>
-                            </div>
-                            <button onClick={() => deleteHabit(habit.id)} className="btn-delete">×</button>
-                        </div>
-                    ))}
-                </div>
+        <div className="dashboard-container">
+            {/* Navigation Header */}
+            <div className="dashboard-header">
+                <h2>Daily Habits</h2>
+                <button className="btn-open-modal" onClick={() => navigate('/settings')}>
+                    ⚙️ Edit Habits
+                </button>
             </div>
+
+            {/* Progress Visualization */}
+            <div className="viz-card">
+                <h3>{progress === 100 ? "All Done! 🎉" : "Today's Progress"}</h3>
+                <div className="progress-container">
+                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                </div>
+                <p>{progress}% of habits completed</p>
+            </div>
+
+            {/* Interactive Grid */}
+            <div className="habit-grid">
+                {habits.map(h => (
+                    <div
+                        key={h.id}
+                        className={`habit-box ${completedIds.includes(h.id) ? 'active' : ''}`}
+                        onClick={() => handleToggle(h.id)}
+                    >
+                        <span className="check-icon">
+                            {completedIds.includes(h.id) ? '✓' : ''}
+                        </span>
+                        <p>{h.name}</p>
+                    </div>
+                ))}
+            </div>
+
+            <button className="btn-submit" onClick={saveProgress} style={{ marginTop: '2rem' }}>
+                Finish Day
+            </button>
         </div>
     );
 };

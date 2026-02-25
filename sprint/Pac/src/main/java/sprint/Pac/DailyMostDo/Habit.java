@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sprint.Pac.Jwt.User;
 
 @Entity
 @Table(name = "habits")
@@ -19,9 +18,9 @@ public class Habit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name; // e.g., "Gym", "Prayer"
+    private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    // Change from User object to Long ID
+    @Column(name = "user_id")
+    private Long userId;
 }

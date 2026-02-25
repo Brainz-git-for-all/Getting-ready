@@ -53,30 +53,34 @@ public class HabitLogService {
         Habit habit =   habitRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("this habit does not exist by id" + id));
         habit.setName(newHabit.getName());
-        habit.setUser(newHabit.getUser());
+        habit.setUserId(newHabit.getUserId());
 
         return habitRepository.save(habit);
     }
 
 
     @Transactional
-    public DailySession saveDailyProgress(Long userId, List<Long> habitId) {
-        // 1. Get the user (or throw error if not found)
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public DailySession saveDailyProgress(Long userId, List<Long> habitIds) {
+        // 1. (Optional) Validation
+        // Instead of fetching the whole User object, just check if they exist.
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found with id: " + userId);
+        }
 
-        // 2. Find existing session for today or create a new one
+        // 2. Find existing session for today or initialize a new one
         DailySession session = sessionRepository.findByUserIdAndLogDate(userId, LocalDate.now())
                 .orElseGet(() -> {
-                    DailySession dailySession = new DailySession();
-                    dailySession.setLogDate(LocalDate.now());
-                    dailySession.setUser(user);
-                    dailySession.setCompletedHabitIds(new ArrayList<>());
-                    return dailySession;
-        });
+                    DailySession newSession = new DailySession();
+                    newSession.setLogDate(LocalDate.now());
+                    newSession.setUserId(userId); // Use the ID directly
+                    newSession.setCompletedHabitIds(new ArrayList<>());
+                    return newSession;
+                });
 
-         session.getCompletedHabitIds().clear();
-         session.getCompletedHabitIds().addAll(habitId);
-         return sessionRepository.save(session);
+        // 3. Update the habit list
+        // It's safer to replace or clear/addAll as you did
+        session.setCompletedHabitIds(new ArrayList<>(habitIds));
+
+        return sessionRepository.save(session);
     }
 }

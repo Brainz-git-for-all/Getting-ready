@@ -12,7 +12,7 @@ import java.util.UUID;
 @Service
 public class RefreshTokenService {
 
-    @Value("${jwt.RefreshExpiration}")
+    @Value("${jwt.refresh.expiration:604800000}")
     private Long refreshTokenDurationMs;
 
     @Autowired
@@ -21,23 +21,24 @@ public class RefreshTokenService {
     @Autowired
     private UserRepository userRepository;
 
-    /**
-     * Finds a token in the database.
-     */
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
     }
-
-    /**
-     * Creates or updates a refresh token for a user.
-     */
     @Transactional
     public RefreshToken createRefreshToken(String username) {
         User user = userRepository.findByUsername(username);
 
-        // If a token already exists for the user, delete it first (one token per user)
+        if (user == null) {
+            throw new RuntimeException("User not found: " + username);
+        }
+
+        // 1. Delete the old token
         refreshTokenRepository.deleteByUser(user);
 
+        // 2. FORCE Hibernate to send the delete to the database immediately
+        refreshTokenRepository.flush();
+
+        // 3. Now create the new one
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
@@ -46,10 +47,6 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
-    /**
-     * Checks if the token has passed its expiry date.
-     * If expired, it deletes it from the DB and throws an error.
-     */
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
@@ -58,11 +55,11 @@ public class RefreshTokenService {
         return token;
     }
 
-    /**
-     * Deletes a token by user (useful for logout).
-     */
     @Transactional
-    public int deleteByUserId(Long userId) {
-        return refreshTokenRepository.deleteByUser(userRepository.findById(userId).get());
+    public void deleteByUserId(Long userId) {
+        // findById usually returns Optional, but let's handle it safely
+        userRepository.findById(userId).ifPresent(user -> {
+            refreshTokenRepository.deleteByUser(user);
+        });
     }
 }

@@ -6,10 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/habit")
+@RequestMapping("/api/habits")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000") // Allows React to connect
 public class HabitLogController {
@@ -27,6 +28,14 @@ public class HabitLogController {
     public ResponseEntity<Habit> getHabitById(@PathVariable long id){
 
         return new ResponseEntity<>(habitLogService.getHabitsById(id),HttpStatus.OK);
+    }
+
+    @GetMapping("/log/user/{id}")
+    public ResponseEntity<DailySession> getDailyLog(@PathVariable long id, @RequestParam String date) {
+        LocalDate localDate = LocalDate.parse(date);
+        return habitLogService.getLogByDate(id, localDate)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.ok(new DailySession())); // Return empty session if none found
     }
 
     @PostMapping
@@ -53,4 +62,6 @@ public class HabitLogController {
     public ResponseEntity<Habit> updateHabit(@PathVariable long id, @RequestBody Habit habit){
         return new ResponseEntity<>(habitLogService.updateHabit(habit, id), HttpStatus.OK);
     }
+
+
   }

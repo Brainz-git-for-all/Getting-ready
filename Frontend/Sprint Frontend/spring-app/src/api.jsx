@@ -55,13 +55,16 @@ export const sprintService = {
 };
 
 export const habitService = {
-    // Note: using plural '/habits' to match our Spring Boot controller
     getAll: () => api.get('/habits'),
     create: (habitData) => api.post('/habits', habitData),
     delete: (id) => api.delete(`/habits/${id}`),
 
-    // Toggles the completion status and updates streaks
-    toggle: (id) => api.patch(`/habits/${id}/toggle`)
-};
+    // FETCH today's completed IDs for a specific user
+    // Note: This matches your Spring Boot: /api/habits/log/user/{id}
+    // But we need a GET mapping for this in your Controller too!
+    getTodaysLog: (userId, date) => api.get(`/habits/log/user/${userId}?date=${date}`),
 
+    // SAVE today's completed IDs
+    saveTodaysLog: (userId, habitIds) => api.post(`/habits/log/user/${userId}`, habitIds)
+};
 export default api;

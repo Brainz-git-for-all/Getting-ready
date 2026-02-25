@@ -58,6 +58,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         // Ensure your sprint endpoints are covered
                         .requestMatchers("/api/sprints/**").authenticated()
+                        .requestMatchers("/api/habits/**").authenticated()
                         .anyRequest().authenticated()
                 );
 
