@@ -55,16 +55,12 @@ export const sprintService = {
 };
 
 export const habitService = {
-    getAll: () => api.get('/habits'),
+    // Change this to accept the ID
+    getAll: (userId) => api.get(`/habits/user/${userId}`),
     create: (habitData) => api.post('/habits', habitData),
     delete: (id) => api.delete(`/habits/${id}`),
 
-    // FETCH today's completed IDs for a specific user
-    // Note: This matches your Spring Boot: /api/habits/log/user/{id}
-    // But we need a GET mapping for this in your Controller too!
     getTodaysLog: (userId, date) => api.get(`/habits/log/user/${userId}?date=${date}`),
-
-    // SAVE today's completed IDs
     saveTodaysLog: (userId, habitIds) => api.post(`/habits/log/user/${userId}`, habitIds)
 };
 export default api;

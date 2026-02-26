@@ -11,12 +11,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/habits")
-@RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000") // Allows React to connect
+
+// Allows React to connect
 public class HabitLogController {
 
 
+    @Autowired
     private final HabitLogService habitLogService;
+
+    public HabitLogController(HabitLogService habitLogService) {
+        this.habitLogService = habitLogService;
+    }
 
     // To this:
     @GetMapping("/user/{userId}")

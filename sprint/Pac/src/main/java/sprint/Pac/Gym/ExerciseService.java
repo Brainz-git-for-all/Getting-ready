@@ -1,18 +1,24 @@
 package sprint.Pac.Gym;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+
 public class ExerciseService {
 
+    @Autowired
+    @Lazy
     private final ExerciseRepository exerciseRepository;
-
 
     public ExerciseService(ExerciseRepository exerciseRepository) {
         this.exerciseRepository = exerciseRepository;
     }
+
 
     public Exercise createExercise(Exercise exercise){
         return exerciseRepository.save(exercise);

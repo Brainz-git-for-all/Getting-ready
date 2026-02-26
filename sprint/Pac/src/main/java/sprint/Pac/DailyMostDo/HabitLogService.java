@@ -1,5 +1,6 @@
 package sprint.Pac.DailyMostDo;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,16 +12,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+
 @Service
+@RequiredArgsConstructor
 public class HabitLogService {
 
-    @Autowired
+
     private HabitRepository habitRepository;
 
-    @Autowired
+
     private DailySessionRepository sessionRepository;
 
-    @Autowired
+
     private UserRepository userRepository;
 
     // GET: Fetch a specific day
