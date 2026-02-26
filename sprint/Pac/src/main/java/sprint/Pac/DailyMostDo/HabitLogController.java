@@ -15,13 +15,15 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:3000") // Allows React to connect
 public class HabitLogController {
 
-    @Autowired
+
     private final HabitLogService habitLogService;
 
-    @GetMapping
-    public ResponseEntity<List<Habit>> getAllHabits(){
-        return new ResponseEntity<>(habitLogService.getAllHabits(), HttpStatus.OK);
+    // To this:
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Habit>> getUserHabits(@PathVariable Long userId) {
+        return new ResponseEntity<>(habitLogService.getHabitsByUserId(userId), HttpStatus.OK);
     }
+
 
 
     @GetMapping("/{id}")

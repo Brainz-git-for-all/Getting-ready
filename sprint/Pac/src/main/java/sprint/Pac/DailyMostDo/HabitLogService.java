@@ -83,4 +83,8 @@ public class HabitLogService {
 
         return sessionRepository.save(session);
     }
+
+    public List<Habit> getHabitsByUserId(Long userId) {
+        return habitRepository.findByUserId(userId);
+    }
 }

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserResponse {
+    private Long id;
     private String username;
     // You can add other non-sensitive fields here later, like:
     // private String email;

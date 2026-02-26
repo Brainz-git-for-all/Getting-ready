@@ -1,85 +1,133 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { habitService } from '../../api';
-import './HabitDashboard.css';
+import HabitForm from './HabitForm';
+import DailyLogForm from './DailyLogForm';
+import './Habits.css';
 
 const HabitDashboard = ({ userId }) => {
     const [habits, setHabits] = useState([]);
-    const [completedIds, setCompletedIds] = useState([]);
+    const [completedToday, setCompletedToday] = useState([]);
+    const [view, setView] = useState('dashboard');
     const today = new Date().toISOString().split('T')[0];
-    const navigate = useNavigate();
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const hRes = await habitService.getAll();
-                const sRes = await habitService.getTodaysLog(userId, today);
-                setHabits(hRes.data);
-                if (sRes.data?.completedHabitIds) {
-                    setCompletedIds(sRes.data.completedHabitIds);
-                }
-            } catch (err) {
-                console.error("Dashboard load failed:", err);
+    const loadData = async () => {
+        try {
+            // UPDATED: Pass userId to fetch only YOUR habits
+            const habitsRes = await habitService.getAll(userId);
+            setHabits(habitsRes.data);
+
+            const logRes = await habitService.getTodaysLog(userId, today);
+            if (logRes.data && logRes.data.completedHabitIds) {
+                setCompletedToday(logRes.data.completedHabitIds);
             }
-        };
-        loadData();
-    }, [userId, today]);
-
-    const progress = habits.length > 0
-        ? Math.round((completedIds.length / habits.length) * 100)
-        : 0;
-
-    const handleToggle = (id) => {
-        setCompletedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+        } catch (err) {
+            console.error("Error fetching data", err);
+        }
     };
 
-    const saveProgress = async () => {
-        try {
-            await habitService.saveTodaysLog(userId, completedIds);
-            alert("Progress saved!");
-        } catch (err) {
-            alert("Failed to save log");
+    useEffect(() => {
+        if (userId) loadData();
+    }, [userId]);
+
+// ... (rest of your component logic)
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure you want to delete this habit?")) {
+            await habitService.delete(id);
+            loadData();
         }
     };
 
     return (
-        <div className="dashboard-container">
-            {/* Navigation Header */}
-            <div className="dashboard-header">
-                <h2>Daily Habits</h2>
-                <button className="btn-open-modal" onClick={() => navigate('/settings')}>
-                    ⚙️ Edit Habits
-                </button>
-            </div>
+        <div className="habit-container">
+            <header className="main-header">
+                <h1>Habit Dashboard</h1>
+                <p className="subtitle">Systematic progress tracking</p>
+            </header>
 
-            {/* Progress Visualization */}
-            <div className="viz-card">
-                <h3>{progress === 100 ? "All Done! 🎉" : "Today's Progress"}</h3>
-                <div className="progress-container">
-                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-                </div>
-                <p>{progress}% of habits completed</p>
-            </div>
-
-            {/* Interactive Grid */}
-            <div className="habit-grid">
-                {habits.map(h => (
-                    <div
-                        key={h.id}
-                        className={`habit-box ${completedIds.includes(h.id) ? 'active' : ''}`}
-                        onClick={() => handleToggle(h.id)}
-                    >
-                        <span className="check-icon">
-                            {completedIds.includes(h.id) ? '✓' : ''}
-                        </span>
-                        <p>{h.name}</p>
+            {view === 'dashboard' && (
+                <>
+                    <div className="action-bar">
+                        <button className="btn-edit" onClick={() => setView('log')}>
+                            Log Progress
+                        </button>
+                        <button className="btn-add-sprint" onClick={() => setView('add')}>
+                            + New Habit
+                        </button>
                     </div>
-                ))}
-            </div>
 
-            <button className="btn-submit" onClick={saveProgress} style={{ marginTop: '2rem' }}>
-                Finish Day
-            </button>
+                    {/* --- HABIT MANAGEMENT TABLE --- */}
+                    <div className="main-header">
+                        <h3>Habit Master List</h3>
+                    </div>
+                    <div className="table-wrapper" style={{ marginBottom: '40px' }}>
+                        <table className="sprint-table">
+                            <thead>
+                                <tr>
+                                    <th>Habit Name</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {habits.map(habit => (
+                                    <tr key={habit.id}>
+                                        <td className="sprint-name">{habit.name}</td>
+                                        <td><span className="task-badge">Active</span></td>
+                                        <td>
+                                            <button className="btn-delete" onClick={() => handleDelete(habit.id)}>Delete</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* --- DAILY LOG TABLE --- */}
+                    <div className="main-header">
+                        <h3>Daily Completion Log ({today})</h3>
+                    </div>
+                    <div className="table-wrapper">
+                        <table className="sprint-table">
+                            <thead>
+                                <tr>
+                                    <th>Habit</th>
+                                    <th>Completion Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {habits.map(habit => {
+                                    const isDone = completedToday.includes(habit.id);
+                                    return (
+                                        <tr key={`log-${habit.id}`}>
+                                            <td>{habit.name}</td>
+                                            <td>
+                                                <span className={isDone ? "status-done" : "status-pending"}>
+                                                    {isDone ? "✓ Completed" : "○ Pending"}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
+
+            {view === 'add' && (
+                <HabitForm
+                    userId={userId}
+                    onClose={() => { setView('dashboard'); loadData(); }}
+                />
+            )}
+
+            {view === 'log' && (
+                <DailyLogForm
+                    userId={userId}
+                    habits={habits}
+                    onClose={() => { setView('dashboard'); loadData(); }}
+                />
+            )}
         </div>
     );
 };

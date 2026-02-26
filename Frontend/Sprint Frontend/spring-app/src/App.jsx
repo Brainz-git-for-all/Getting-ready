@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './components/Login/Login';
 import SprintDashboard from './components/sprint/SprintDashboard';
 import HabitDashboard from './components/Habit/HabitDashboard';
@@ -6,11 +6,19 @@ import { authService } from './api';
 import './App.css';
 
 function App() {
-  // Check if user is logged in based on localStorage
+  // 1. Initialize state from localStorage
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
+  const [userId, setUserId] = useState(localStorage.getItem('userId'));
 
-  // Track which module is currently displayed in the main area
+  // 2. Tab Navigation state
   const [activeTab, setActiveTab] = useState('sprints');
+
+  // 3. Handle successful login
+  const handleLoginSuccess = () => {
+    // When login succeeds, we pull the newly saved values from localStorage
+    setIsLoggedIn(true);
+    setUserId(localStorage.getItem('userId'));
+  };
 
   const handleLogout = async () => {
     try {
@@ -18,20 +26,21 @@ function App() {
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
-      // Clean up local storage and reset state
+      // Clean up all user data on logout
       localStorage.clear();
       setIsLoggedIn(false);
+      setUserId(null);
     }
   };
 
-  // If not logged in, show the Login component
+  // If not logged in, show the Login component and pass the success handler
   if (!isLoggedIn) {
-    return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
+    return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar Navigation - Collapsed by default, expands on hover */}
+      {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <span className="icon">💎</span>
@@ -57,7 +66,6 @@ function App() {
             <span className="label">Habits</span>
           </button>
 
-          {/* Placeholder icons for future expansion */}
           <button className="nav-item disabled" title="Exercise">
             <span className="icon">🏋️</span>
             <span className="label">Exercise</span>
@@ -90,9 +98,11 @@ function App() {
 
         <section className="content-body">
           {activeTab === 'sprints' ? (
-            <SprintDashboard />
+            /* Pass userId to Sprints if needed */
+            <SprintDashboard userId={userId} />
           ) : (
-            <HabitDashboard />
+            /* CRITICAL: Pass the userId prop to the HabitDashboard */
+            <HabitDashboard userId={userId} />
           )}
         </section>
       </main>
