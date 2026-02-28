@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login/Login';
+import MainDashboard from './components/MainDashboard/MainDashboard'; // <--- NEW
 import SprintDashboard from './components/sprint/SprintDashboard';
 import HabitDashboard from './components/Habit/HabitDashboard';
 import { authService } from './api';
 import './App.css';
 
 function App() {
-  // FIXED: Safely parse localStorage so we don't accidentally use the string "null"
   const storedUserId = localStorage.getItem('userId');
   const initialUserId = (storedUserId !== 'null' && storedUserId !== 'undefined') ? storedUserId : null;
 
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
   const [userId, setUserId] = useState(initialUserId);
-  const [activeTab, setActiveTab] = useState('sprints');
+
+  // <--- Set 'dashboard' as the default view
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
@@ -44,6 +46,16 @@ function App() {
         </div>
 
         <nav className="sidebar-nav">
+          {/* <--- NEW Dashboard Nav Item */}
+          <button
+            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+            title="Dashboard"
+          >
+            <span className="icon">📊</span>
+            <span className="label">Dashboard</span>
+          </button>
+
           <button
             className={`nav-item ${activeTab === 'sprints' ? 'active' : ''}`}
             onClick={() => setActiveTab('sprints')}
@@ -84,7 +96,8 @@ function App() {
       <main className="main-content">
         <header className="content-header">
           <h1>
-            {activeTab === 'sprints' ? 'Sprint Management' : 'Habit Tracker'}
+            {activeTab === 'dashboard' ? 'Overview Dashboard' :
+              activeTab === 'sprints' ? 'Sprint Management' : 'Habit Tracker'}
           </h1>
           <div className="user-badge">
             {localStorage.getItem('username') || 'User'}
@@ -92,7 +105,10 @@ function App() {
         </header>
 
         <section className="content-body">
-          {activeTab === 'sprints' ? (
+          {/* <--- Render Dashboard Component */}
+          {activeTab === 'dashboard' ? (
+            <MainDashboard userId={userId} />
+          ) : activeTab === 'sprints' ? (
             <SprintDashboard userId={userId} />
           ) : (
             <HabitDashboard userId={userId} />

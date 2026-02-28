@@ -78,4 +78,9 @@ public class HabitLogController {
     public ResponseEntity<Habit> updateHabit(@PathVariable long id, @RequestBody Habit habit){
         return new ResponseEntity<>(habitLogService.updateHabit(habit, id), HttpStatus.OK);
     }
+
+    @GetMapping("/logs/user/{userId}")
+    public ResponseEntity<List<DailySession>> getHabitLogsByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(habitLogService.findAllByUserId(userId));
+    }
 }
