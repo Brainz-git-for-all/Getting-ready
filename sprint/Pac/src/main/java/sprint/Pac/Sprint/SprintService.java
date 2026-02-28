@@ -93,4 +93,19 @@ public class SprintService {
                     }
                 });
     }
+
+    // Add this new method inside SprintService.java
+    @Transactional
+    public Optional<Task> updateTaskCompletion(long sprintId, long taskId, boolean isCompleted) {
+        return sprintRepository.findById(sprintId).flatMap(sprint -> {
+            return sprint.getTasks().stream()
+                    .filter(t -> t.getId() == taskId)
+                    .findFirst()
+                    .map(task -> {
+                        task.setCompleted(isCompleted); // Update the status
+                        return taskRepository.save(task);
+                    });
+        });
+    }
+
 }

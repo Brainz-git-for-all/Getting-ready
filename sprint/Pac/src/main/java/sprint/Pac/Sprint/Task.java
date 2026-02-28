@@ -21,14 +21,14 @@ public class Task {
 
     private String name;
     private String priority;
-
-    // <--- Replaced dueDate with startDate and endDate for Calendar duration
     private LocalDate startDate;
     private LocalDate endDate;
+
+    // <--- NEW: Track if the task is finished
+    private boolean completed = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference
     private Sprint sprint;
-
 }

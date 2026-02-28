@@ -208,3 +208,114 @@
         opacity: 1;
     }
 }
+
+/* Make the task badge look clickable inside the table */
+.btn-task-badge {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s ease;
+}
+
+.btn-task-badge:hover {
+    transform: scale(1.05);
+}
+
+.task-badge {
+    background-color: #e0e7ff;
+    color: #4f46e5;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Modal specific to the Task List */
+.task-list-modal {
+    max-width: 500px;
+    width: 100%;
+}
+
+.modal-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.modal-header-row h3 {
+    margin: 0;
+    color: #333;
+}
+
+.task-list-body {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.read-only-task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.read-only-task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.task-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.task-title {
+    font-size: 1rem;
+    color: #111;
+}
+
+.task-dates {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.task-priority {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.priority-high {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.priority-medium {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.priority-low {
+    background-color: #d1fae5;
+    color: #059669;
+}
+
+.no-tasks-msg {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    padding: 20px 0;
+}

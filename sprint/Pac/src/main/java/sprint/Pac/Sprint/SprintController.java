@@ -80,4 +80,17 @@ public class SprintController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
+    // Add this endpoint inside SprintController.java
+    @PatchMapping("/{sprintId}/tasks/{taskId}/complete")
+    public ResponseEntity<Task> toggleTaskCompletion(
+            @PathVariable long sprintId,
+            @PathVariable long taskId,
+            @RequestParam boolean completed) {
+
+        return sprintService.updateTaskCompletion(sprintId, taskId, completed)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }
