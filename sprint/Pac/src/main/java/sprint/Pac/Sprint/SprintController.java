@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/sprints") // Base URL for all Sprint endpoints
+@RequestMapping("/api/sprints")
 public class SprintController {
 
     private final SprintService sprintService;
@@ -16,79 +16,56 @@ public class SprintController {
         this.sprintService = sprintService;
     }
 
-    /**
-     * GET /api/sprints
-     * Retrieves all sprints.
-     * @return A list of all Sprint entities.
-     */
     @GetMapping
     public ResponseEntity<List<Sprint>> getAllSprints() {
         List<Sprint> sprints = sprintService.findAllSprints();
-        return ResponseEntity.ok(sprints); // HTTP 200 OK
+        return ResponseEntity.ok(sprints);
     }
 
-    /**
-     * GET /api/sprints/{id}
-     * Retrieves a sprint by its ID.
-     * @param id The ID of the Sprint.
-     * @return The requested Sprint, or 404 Not Found.
-     */
+    // <--- Added endpoint to fetch sprints specific to a User
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Sprint>> getSprintsByUserId(@PathVariable Long userId) {
+        List<Sprint> sprints = sprintService.findAllSprintsByUserId(userId);
+        return ResponseEntity.ok(sprints);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Sprint> getSprintById(@PathVariable long id) {
         return sprintService.findSprintById(id)
-                .map(ResponseEntity::ok) // If present, return 200 OK
-                .orElseGet(() -> ResponseEntity.notFound().build()); // If not present, return 404 Not Found
-    }
-
-    /**
-     * POST /api/sprints
-     * Creates a new sprint.
-     * @param sprint The Sprint object from the request body.
-     * @return The created Sprint with HTTP 201 Created status.
-     */
-    @PostMapping
-    public ResponseEntity<Sprint> createSprint(@RequestBody Sprint sprint) {
-        Sprint savedSprint = sprintService.saveSprint(sprint);
-        // Returns 201 Created and the location of the new resource (optional, but good practice)
-        return new ResponseEntity<>(savedSprint, HttpStatus.CREATED);
-    }
-
-
-    /**
-     * POST /api/sprints/{sprintId}/tasks
-     * Adds a new Task to the specified Sprint.
-     * @param sprintId The ID of the Sprint.
-     * @param task The Task entity from the request body.
-     * @return The updated Sprint, or 404 Not Found.
-     */
-    @PostMapping("/{sprintId}/tasks")
-    public ResponseEntity<Sprint> addTaskToSprint(@PathVariable long sprintId, @RequestBody Task task) {
-        return sprintService.addTaskToSprint(sprintId, task)
-                .map(sprint -> new ResponseEntity<>(sprint, HttpStatus.CREATED))
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * DELETE /api/sprints/{sprintId}/tasks/{taskId}
-     * Deletes a Task from the specified Sprint.
-     * @param sprintId The ID of the Sprint.
-     * @param taskId The ID of the Task to delete.
-     * @return HTTP 204 No Content, or 404 Not Found if Sprint/Task doesn't exist in that Sprint.
-     */
+    @PostMapping
+    public ResponseEntity<Sprint> createSprint(@RequestBody Sprint sprint) {
+        Sprint savedSprint = sprintService.saveSprint(sprint);
+        return new ResponseEntity<>(savedSprint, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/{sprintId}/tasks")
+    public ResponseEntity<?> addTaskToSprint(@PathVariable long sprintId, @RequestBody Task task) {
+        try {
+            return sprintService.addTaskToSprint(sprintId, task)
+                    .map(sprint -> new ResponseEntity<>(sprint, HttpStatus.CREATED))
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            // <--- Catch the Date validation error and return a 400 Bad Request
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @DeleteMapping("/{sprintId}/tasks/{taskId}")
     public ResponseEntity<Void> deleteTaskFromSprint(@PathVariable long sprintId, @PathVariable long taskId) {
         try {
             sprintService.deleteTaskFromSprint(sprintId, taskId);
-            return ResponseEntity.noContent().build(); // HTTP 204 No Content
+            return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            // Task not found in Sprint, or Sprint not found (depending on detailed error handling)
-            return ResponseEntity.notFound().build(); // HTTP 404 Not Found
+            return ResponseEntity.notFound().build();
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Sprint> updateSprint(@PathVariable long id, @RequestBody Sprint sprintDetails) {
-        // We ensure the ID from the URL is set on the object
         return sprintService.updateSprint(id, sprintDetails)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
