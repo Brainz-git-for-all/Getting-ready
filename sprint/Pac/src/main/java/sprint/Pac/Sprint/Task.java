@@ -13,15 +13,19 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-
 public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY )
     private long id;
+
     private String name;
     private String priority;
-    private LocalDate dueDate;
+
+    // <--- Replaced dueDate with startDate and endDate for Calendar duration
+    private LocalDate startDate;
+    private LocalDate endDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference
