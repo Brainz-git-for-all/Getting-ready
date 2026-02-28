@@ -12,7 +12,6 @@ const HabitDashboard = ({ userId }) => {
 
     const loadData = async () => {
         try {
-            // UPDATED: Pass userId to fetch only YOUR habits
             const habitsRes = await habitService.getAll(userId);
             setHabits(habitsRes.data);
 
@@ -26,10 +25,12 @@ const HabitDashboard = ({ userId }) => {
     };
 
     useEffect(() => {
-        if (userId) loadData();
+        // FIXED: Stop React from fetching if userId is literally the string 'null'
+        if (userId && userId !== 'null' && userId !== 'undefined') {
+            loadData();
+        }
     }, [userId]);
 
-// ... (rest of your component logic)
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this habit?")) {
             await habitService.delete(id);
@@ -55,7 +56,6 @@ const HabitDashboard = ({ userId }) => {
                         </button>
                     </div>
 
-                    {/* --- HABIT MANAGEMENT TABLE --- */}
                     <div className="main-header">
                         <h3>Habit Master List</h3>
                     </div>
@@ -82,7 +82,6 @@ const HabitDashboard = ({ userId }) => {
                         </table>
                     </div>
 
-                    {/* --- DAILY LOG TABLE --- */}
                     <div className="main-header">
                         <h3>Daily Completion Log ({today})</h3>
                     </div>

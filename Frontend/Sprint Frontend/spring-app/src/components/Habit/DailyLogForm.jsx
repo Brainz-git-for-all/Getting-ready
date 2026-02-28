@@ -2,19 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { habitService } from '../../api';
 
 const DailyLogForm = ({ userId, habits, onClose }) => {
-    // This state holds the IDs of habits that are 'ticked'
     const [selectedIds, setSelectedIds] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Get current date in ISO format (YYYY-MM-DD)
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Load existing progress when the component opens
     useEffect(() => {
         const fetchToday = async () => {
             try {
                 const res = await habitService.getTodaysLog(userId, today);
-                // If the backend returns a session with completed IDs, check them
                 if (res.data && res.data.completedHabitIds) {
                     setSelectedIds(res.data.completedHabitIds);
                 }
@@ -25,23 +21,20 @@ const DailyLogForm = ({ userId, habits, onClose }) => {
         fetchToday();
     }, [userId, today]);
 
-    // 2. The Logic for "Ticking"
     const toggleHabit = (id) => {
         setSelectedIds(prev =>
             prev.includes(id)
-                ? prev.filter(habitId => habitId !== id) // Un-tick: remove from list
-                : [...prev, id]                         // Tick: add to list
+                ? prev.filter(habitId => habitId !== id)
+                : [...prev, id]
         );
     };
 
-    // 3. Save to Spring Boot
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Matches @PostMapping("/log/user/{id}")
-            // Sends the List<Long> to the server
-            await habitService.saveTodaysLog(userId, selectedIds);
-            onClose(); // Return to dashboard
+            // FIXED: Added 'today' as the second parameter to ensure timezone synchronization
+            await habitService.saveTodaysLog(userId, today, selectedIds);
+            onClose();
         } catch (err) {
             console.error("Save failed", err);
             alert("Error saving your progress.");

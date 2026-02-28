@@ -13,22 +13,26 @@ const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
         setIsSubmitting(true);
 
         try {
-            // 1. Call your updated AuthController @PostMapping("/login")
             const response = await authService.login(credentials);
 
-            /**
-             * 2. Extract data from the new UserResponse structure:
-             * response.data.id (The Long ID from your Java backend)
-             * response.data.username
-             */
-            localStorage.setItem('userId', response.data.id);
-            localStorage.setItem('username', response.data.username);
+            // Console log to see exactly what Spring Boot sends back
+            console.log("Backend Login Response:", response.data);
+
+            // FIXED: Look for either 'id' or 'userId' in the response.
+            const actualUserId = response.data?.id || response.data?.userId;
+
+            if (!actualUserId) {
+                setError("Login failed: The backend did not return a user ID.");
+                setIsSubmitting(false);
+                return; // Stop here, do not save undefined to local storage
+            }
+
+            localStorage.setItem('userId', actualUserId);
+            localStorage.setItem('username', response.data?.username || "User");
             localStorage.setItem('isLoggedIn', 'true');
 
-            // 3. Trigger the success callback to change App view
             onLoginSuccess();
         } catch (err) {
-            // Handle 401 Unauthorized or connection errors
             setError('Unauthorized: Please check your credentials.');
         } finally {
             setIsSubmitting(false);

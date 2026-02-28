@@ -4,15 +4,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import sprint.Pac.Jwt.User;
 
 import java.time.LocalDate;
 import java.util.List;
 
-
 @Entity
 @Table(name = "daily_sessions", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "logDate"})
+        // FIXED: "logDate" changed to "log_date" to match database column naming
+        @UniqueConstraint(columnNames = {"user_id", "log_date"})
 })
 @Getter
 @Setter
@@ -25,7 +24,6 @@ public class DailySession {
 
     private LocalDate logDate;
 
-    // Change from User object to Long ID
     @Column(name = "user_id")
     private Long userId;
 

@@ -11,6 +11,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -40,9 +43,16 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
 
-        return ResponseEntity.ok(new UserResponse(user.getUsername()));
+        // Save the user so the database generates the ID
+        User savedUser = userRepository.save(user);
+
+        // Send both ID and Username to the frontend
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("id", savedUser.getId());
+        responseBody.put("username", savedUser.getUsername());
+
+        return ResponseEntity.ok(responseBody);
     }
 
     @PostMapping("/login")
@@ -59,7 +69,7 @@ public class AuthController {
                 .path("/")
                 .maxAge(24 * 60 * 60)
                 .httpOnly(true)
-                .secure(false)
+                .secure(false) // Change to true if using HTTPS in production
                 .sameSite("Lax")
                 .build();
 
@@ -67,19 +77,29 @@ public class AuthController {
                 .path("/api/auth/refresh")
                 .maxAge(7 * 24 * 60 * 60)
                 .httpOnly(true)
-                .secure(false)
+                .secure(false) // Change to true if using HTTPS in production
                 .sameSite("Lax")
                 .build();
+
+        // FIXED: Using your exact UserRepository method
+        User user = userRepository.findByUsername(loginRequest.getUsername());
+
+        // Safely extract the ID in case something goes wrong
+        Long userId = (user != null) ? user.getId() : null;
+
+        // Create a JSON map containing exactly what React expects: { "id": 1, "username": "Admin" }
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("id", userId);
+        responseBody.put("username", loginRequest.getUsername());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(new UserResponse(loginRequest.getUsername()));
+                .body(responseBody);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(@CookieValue(name = "refreshToken", required = false) String requestRefreshToken) {
-        // If cookie is missing (user logged out), stop the process here
         if (requestRefreshToken == null || requestRefreshToken.isEmpty()) {
             return ResponseEntity.status(401).body("Refresh token missing");
         }
@@ -100,7 +120,6 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
-        // Clear both cookies by setting maxAge to 0
         ResponseCookie jwtCookie = ResponseCookie.from("accessToken", "").path("/").maxAge(0).build();
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "").path("/api/auth/refresh").maxAge(0).build();
 

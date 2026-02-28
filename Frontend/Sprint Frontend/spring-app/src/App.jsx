@@ -6,16 +6,15 @@ import { authService } from './api';
 import './App.css';
 
 function App() {
-  // 1. Initialize state from localStorage
-  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
-  const [userId, setUserId] = useState(localStorage.getItem('userId'));
+  // FIXED: Safely parse localStorage so we don't accidentally use the string "null"
+  const storedUserId = localStorage.getItem('userId');
+  const initialUserId = (storedUserId !== 'null' && storedUserId !== 'undefined') ? storedUserId : null;
 
-  // 2. Tab Navigation state
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
+  const [userId, setUserId] = useState(initialUserId);
   const [activeTab, setActiveTab] = useState('sprints');
 
-  // 3. Handle successful login
   const handleLoginSuccess = () => {
-    // When login succeeds, we pull the newly saved values from localStorage
     setIsLoggedIn(true);
     setUserId(localStorage.getItem('userId'));
   };
@@ -26,21 +25,18 @@ function App() {
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
-      // Clean up all user data on logout
       localStorage.clear();
       setIsLoggedIn(false);
       setUserId(null);
     }
   };
 
-  // If not logged in, show the Login component and pass the success handler
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <span className="icon">💎</span>
@@ -85,23 +81,20 @@ function App() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="main-content">
         <header className="content-header">
           <h1>
             {activeTab === 'sprints' ? 'Sprint Management' : 'Habit Tracker'}
           </h1>
           <div className="user-badge">
-            {localStorage.getItem('username')}
+            {localStorage.getItem('username') || 'User'}
           </div>
         </header>
 
         <section className="content-body">
           {activeTab === 'sprints' ? (
-            /* Pass userId to Sprints if needed */
             <SprintDashboard userId={userId} />
           ) : (
-            /* CRITICAL: Pass the userId prop to the HabitDashboard */
             <HabitDashboard userId={userId} />
           )}
         </section>
