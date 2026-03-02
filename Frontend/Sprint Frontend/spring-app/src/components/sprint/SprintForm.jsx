@@ -86,7 +86,13 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
             onSprintCreated();
         } catch (error) {
             console.error("Save failed:", error);
-            alert("Error saving sprint. Ensure task dates are strictly within sprint start/end dates.");
+
+            // Extract the actual error message sent from the backend or Axios
+            const backendError = error.response?.data;
+            const fallbackError = error.message || "Unknown error occurred.";
+
+            // Show the true error
+            alert(`Failed to save: ${typeof backendError === 'string' ? backendError : fallbackError}`);
         }
     };
 

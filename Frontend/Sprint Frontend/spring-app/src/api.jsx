@@ -43,7 +43,10 @@ export const habitService = {
 export const sprintService = {
     getAllByUser: (userId) => api.get(`/sprints/user/${userId}`),
     create: (sprintData) => api.post('/sprints', sprintData),
+    update: (id, sprintData) => api.put(`/sprints/${id}`, sprintData), // <-- ADDED
     delete: (id) => api.delete(`/sprints/${id}`),
+    addTask: (sprintId, taskData) => api.post(`/sprints/${sprintId}/tasks`, taskData), // <-- ADDED
+    deleteTask: (sprintId, taskId) => api.delete(`/sprints/${sprintId}/tasks/${taskId}`), // <-- ADDED
     toggleTaskCompletion: (sprintId, taskId, completed) =>
         api.patch(`/sprints/${sprintId}/tasks/${taskId}/complete?completed=${completed}`)
 };
