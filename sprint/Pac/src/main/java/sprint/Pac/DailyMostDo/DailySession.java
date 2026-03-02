@@ -10,7 +10,6 @@ import java.util.List;
 
 @Entity
 @Table(name = "daily_sessions", uniqueConstraints = {
-        // FIXED: "logDate" changed to "log_date" to match database column naming
         @UniqueConstraint(columnNames = {"user_id", "log_date"})
 })
 @Getter

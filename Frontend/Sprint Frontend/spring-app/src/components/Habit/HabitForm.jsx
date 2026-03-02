@@ -1,36 +1,39 @@
-import React, { useState } from 'react';
-import { habitService } from '../../api'; // Using your provided axios api instance
+import React, { useState, useEffect } from 'react';
+import { habitService } from '../../api';
 
-const HabitForm = ({ userId, onClose }) => {
+const HabitForm = ({ userId, existingHabit, onClose }) => {
     const [name, setName] = useState('');
+    const [isBad, setIsBad] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Pre-fill the form if we are editing an existing habit
+    useEffect(() => {
+        if (existingHabit) {
+            setName(existingHabit.name);
+            setIsBad(existingHabit.badHabit);
+        }
+    }, [existingHabit]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Prevent double-submissions
-        if (isSubmitting) return;
         setIsSubmitting(true);
-
         try {
-            /** * This matches your Habit.java entity:
-             * private String name;
-             * private Long userId;
-             */
             const habitData = {
-                name: name,
-                userId: userId
+                name,
+                userId,
+                badHabit: isBad
             };
 
-            // Calls @PostMapping in HabitLogController
-            await habitService.create(habitData);
-
-            // Logic: Success, clear form and close
-            setName('');
+            if (existingHabit) {
+                // Update existing
+                await habitService.update(existingHabit.id, habitData);
+            } else {
+                // Create new
+                await habitService.create(habitData);
+            }
             onClose();
         } catch (err) {
-            console.error("Submission error:", err);
-            alert("Failed to create habit. Please try again.");
+            alert(`Failed to ${existingHabit ? 'update' : 'create'} habit.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -38,41 +41,36 @@ const HabitForm = ({ userId, onClose }) => {
 
     return (
         <div className="form-card">
-            <header className="main-header">
-                <h3>Create New Habit</h3>
-                <p className="subtitle">Add a recurring task for your daily log</p>
+            <header className="main-header" style={{ marginBottom: '24px' }}>
+                <h3>{existingHabit ? 'Edit Habit' : 'New Habit'}</h3>
             </header>
 
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label htmlFor="habit-name">Habit Name</label>
+                    <label>What is your habit name?</label>
                     <input
-                        id="habit-name"
-                        className="habit-input"
                         type="text"
+                        className="habit-input"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g., Read for 30 mins"
                         required
-                        disabled={isSubmitting}
+                        placeholder="e.g. Read 10 pages or Smoke"
                     />
                 </div>
 
-                <div className="action-bar" style={{ marginTop: '20px' }}>
-                    <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="btn-primary"
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Saving...' : 'Save Habit'}
+                <div className="form-group">
+                    <div className="toggle-container" onClick={() => setIsBad(!isBad)}>
+                        <div className={`toggle-switch ${isBad ? 'on' : ''}`}></div>
+                        <span style={{ fontSize: '14px', color: '#4b5563', userSelect: 'none' }}>
+                            Mark as a "Bad Habit"
+                        </span>
+                    </div>
+                </div>
+
+                <div className="action-bar" style={{ marginTop: '30px' }}>
+                    <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+                    <button type="submit" disabled={isSubmitting} className="btn-primary">
+                        {isSubmitting ? 'Saving...' : (existingHabit ? 'Update Habit' : 'Save Habit')}
                     </button>
                 </div>
             </form>

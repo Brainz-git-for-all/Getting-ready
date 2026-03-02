@@ -32,7 +32,6 @@ const DailyLogForm = ({ userId, habits, onClose }) => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // FIXED: Added 'today' as the second parameter to ensure timezone synchronization
             await habitService.saveTodaysLog(userId, today, selectedIds);
             onClose();
         } catch (err) {

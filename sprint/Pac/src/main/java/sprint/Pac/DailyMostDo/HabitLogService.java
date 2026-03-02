@@ -14,7 +14,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class HabitLogService {
 
-    // FIXED: Added 'final' keyword so @RequiredArgsConstructor actually injects them
     private final HabitRepository habitRepository;
     private final DailySessionRepository sessionRepository;
     private final UserRepository userRepository;
@@ -23,54 +22,43 @@ public class HabitLogService {
         return sessionRepository.findByUserIdAndLogDate(userId, date);
     }
 
-    public Habit createHabit(Habit habit){
+    public Habit createHabit(Habit habit) {
         return habitRepository.save(habit);
     }
 
-    public List<Habit> getAllHabits(){
-        return habitRepository.findAll();
-    }
-
-    public Habit getHabitsById(long id){
+    public Habit getHabitsById(long id) {
         return habitRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("this habit does not exist by id" + id));
+                .orElseThrow(() -> new RuntimeException("Habit not found: " + id));
     }
 
-    public void deleteHabit(long id){
+    public void deleteHabit(long id) {
         Habit habit = habitRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("this habit does not exist by id" + id));
+                .orElseThrow(() -> new RuntimeException("Habit not found: " + id));
         habitRepository.delete(habit);
     }
 
-    public Habit updateHabit(@org.jetbrains.annotations.NotNull Habit newHabit, long id){
+    @Transactional
+    public Habit updateHabit(Habit newHabit, long id) {
         Habit habit = habitRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("this habit does not exist by id" + id));
+                .orElseThrow(() -> new RuntimeException("Habit not found: " + id));
         habit.setName(newHabit.getName());
-        habit.setUserId(newHabit.getUserId());
-
+        habit.setBadHabit(newHabit.getBadHabit()); // Updated to use getBadHabit()
         return habitRepository.save(habit);
     }
 
     @Transactional
-    // FIXED: Added 'LocalDate date' so the server syncs with the user's timezone date
     public DailySession saveDailyProgress(Long userId, List<Long> habitIds, LocalDate date) {
+        if (!userRepository.existsById(userId)) throw new RuntimeException("User not found");
 
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found with id: " + userId);
-        }
-
-        // FIXED: Replaced LocalDate.now() with the 'date' passed from React
         DailySession session = sessionRepository.findByUserIdAndLogDate(userId, date)
                 .orElseGet(() -> {
-                    DailySession newSession = new DailySession();
-                    newSession.setLogDate(date); // Use exact date here too
-                    newSession.setUserId(userId);
-                    newSession.setCompletedHabitIds(new ArrayList<>());
-                    return newSession;
+                    DailySession ns = new DailySession();
+                    ns.setLogDate(date);
+                    ns.setUserId(userId);
+                    return ns;
                 });
 
         session.setCompletedHabitIds(new ArrayList<>(habitIds));
-
         return sessionRepository.save(session);
     }
 
@@ -78,9 +66,7 @@ public class HabitLogService {
         return habitRepository.findByUserId(userId);
     }
 
-    public  List<DailySession> findAllByUserId(Long id){
-        userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("user name does not exist by id " + id));
-         return  sessionRepository.findAllByUserId(id);
+    public List<DailySession> findAllByUserId(Long id) {
+        return sessionRepository.findAllByUserId(id);
     }
 }

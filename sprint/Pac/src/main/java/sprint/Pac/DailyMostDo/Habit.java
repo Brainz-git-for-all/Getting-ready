@@ -20,7 +20,9 @@ public class Habit {
 
     private String name;
 
-    // Change from User object to Long ID
     @Column(name = "user_id")
     private Long userId;
+
+    @Column(name = "bad_habit")
+    private Boolean badHabit = false; // Changed from boolean to Boolean to allow null assignment gracefully
 }

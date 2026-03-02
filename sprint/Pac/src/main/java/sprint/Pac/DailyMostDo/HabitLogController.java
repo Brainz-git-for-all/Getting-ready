@@ -27,7 +27,7 @@ public class HabitLogController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Habit> getHabitById(@PathVariable long id){
-        return new ResponseEntity<>(habitLogService.getHabitsById(id),HttpStatus.OK);
+        return new ResponseEntity<>(habitLogService.getHabitsById(id), HttpStatus.OK);
     }
 
     @GetMapping("/log/user/{id}")
@@ -36,7 +36,6 @@ public class HabitLogController {
         return habitLogService.getLogByDate(id, localDate)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
-                    // FIXED: Initialize empty array so frontend doesn't crash on .includes()
                     DailySession emptySession = new DailySession();
                     emptySession.setCompletedHabitIds(new ArrayList<>());
                     return ResponseEntity.ok(emptySession);
@@ -48,39 +47,29 @@ public class HabitLogController {
         return new ResponseEntity<>(habitLogService.createHabit(habit), HttpStatus.CREATED);
     }
 
-    // FIXED: Added @RequestParam String date to fetch exactly what day React says it is
     @PostMapping("/log/user/{id}")
-    public ResponseEntity<DailySession> createNewSession(
-            @RequestBody List<Long> habit,
+    public ResponseEntity<DailySession> saveDailyLog(
+            @RequestBody List<Long> habitIds,
             @PathVariable long id,
             @RequestParam String date) {
 
         LocalDate localDate = LocalDate.parse(date);
-        // FIXED: Passed localDate to the service method
-        return new ResponseEntity<>(habitLogService.saveDailyProgress(id, habit, localDate), HttpStatus.CREATED);
+        return new ResponseEntity<>(habitLogService.saveDailyProgress(id, habitIds, localDate), HttpStatus.CREATED);
     }
-    @GetMapping("all/logs/user/{id}")
-    public ResponseEntity<List<DailySession>> getAllSessionById(@PathVariable Long id){
-        return new ResponseEntity<>(habitLogService.findAllByUserId(id), HttpStatus.OK);
+
+    @GetMapping("/logs/user/{userId}")
+    public ResponseEntity<List<DailySession>> getAllLogsByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(habitLogService.findAllByUserId(userId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHabit(@PathVariable long id) {
-        try {
-            habitLogService.deleteHabit(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        habitLogService.deleteHabit(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Habit> updateHabit(@PathVariable long id, @RequestBody Habit habit){
         return new ResponseEntity<>(habitLogService.updateHabit(habit, id), HttpStatus.OK);
-    }
-
-    @GetMapping("/logs/user/{userId}")
-    public ResponseEntity<List<DailySession>> getHabitLogsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(habitLogService.findAllByUserId(userId));
     }
 }

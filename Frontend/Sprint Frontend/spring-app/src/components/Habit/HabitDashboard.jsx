@@ -8,6 +8,7 @@ const HabitDashboard = ({ userId }) => {
     const [habits, setHabits] = useState([]);
     const [completedToday, setCompletedToday] = useState([]);
     const [view, setView] = useState('dashboard');
+    const [editingHabit, setEditingHabit] = useState(null); // Track the habit being edited
     const today = new Date().toISOString().split('T')[0];
 
     const loadData = async () => {
@@ -25,8 +26,7 @@ const HabitDashboard = ({ userId }) => {
     };
 
     useEffect(() => {
-        // FIXED: Stop React from fetching if userId is literally the string 'null'
-        if (userId && userId !== 'null' && userId !== 'undefined') {
+        if (userId && userId !== 'null') {
             loadData();
         }
     }, [userId]);
@@ -36,6 +36,17 @@ const HabitDashboard = ({ userId }) => {
             await habitService.delete(id);
             loadData();
         }
+    };
+
+    const handleEdit = (habit) => {
+        setEditingHabit(habit);
+        setView('add');
+    };
+
+    const closeForm = () => {
+        setView('dashboard');
+        setEditingHabit(null);
+        loadData();
     };
 
     return (
@@ -48,23 +59,16 @@ const HabitDashboard = ({ userId }) => {
             {view === 'dashboard' && (
                 <>
                     <div className="action-bar">
-                        <button className="btn-edit" onClick={() => setView('log')}>
-                            Log Progress
-                        </button>
-                        <button className="btn-add-sprint" onClick={() => setView('add')}>
-                            + New Habit
-                        </button>
+                        <button className="btn-primary" onClick={() => setView('log')}>Log Progress</button>
+                        <button className="btn-secondary" onClick={() => { setEditingHabit(null); setView('add'); }}>+ New Habit</button>
                     </div>
 
-                    <div className="main-header">
-                        <h3>Habit Master List</h3>
-                    </div>
-                    <div className="table-wrapper" style={{ marginBottom: '40px' }}>
+                    <div className="table-wrapper">
                         <table className="sprint-table">
                             <thead>
                                 <tr>
                                     <th>Habit Name</th>
-                                    <th>Status</th>
+                                    <th>Type</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -72,61 +76,30 @@ const HabitDashboard = ({ userId }) => {
                                 {habits.map(habit => (
                                     <tr key={habit.id}>
                                         <td className="sprint-name">{habit.name}</td>
-                                        <td><span className="task-badge">Active</span></td>
                                         <td>
-                                            <button className="btn-delete" onClick={() => handleDelete(habit.id)}>Delete</button>
+                                            <span style={{
+                                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600',
+                                                backgroundColor: habit.badHabit ? '#fff1f0' : '#f6ffed',
+                                                color: habit.badHabit ? '#cf1322' : '#389e0d',
+                                                border: habit.badHabit ? '1px solid #ffa39e' : '1px solid #b7eb8f'
+                                            }}>
+                                                {habit.badHabit ? 'Bad Habit' : 'Good Habit'}
+                                            </span>
+                                        </td>
+                                        <td style={{ display: 'flex', gap: '8px' }}>
+                                            <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => handleEdit(habit)}>Edit</button>
+                                            <button className="btn-delete" style={{ padding: '6px 12px', fontSize: '0.85rem', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }} onClick={() => handleDelete(habit.id)}>Delete</button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-
-                    <div className="main-header">
-                        <h3>Daily Completion Log ({today})</h3>
-                    </div>
-                    <div className="table-wrapper">
-                        <table className="sprint-table">
-                            <thead>
-                                <tr>
-                                    <th>Habit</th>
-                                    <th>Completion Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {habits.map(habit => {
-                                    const isDone = completedToday.includes(habit.id);
-                                    return (
-                                        <tr key={`log-${habit.id}`}>
-                                            <td>{habit.name}</td>
-                                            <td>
-                                                <span className={isDone ? "status-done" : "status-pending"}>
-                                                    {isDone ? "✓ Completed" : "○ Pending"}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
                 </>
             )}
 
-            {view === 'add' && (
-                <HabitForm
-                    userId={userId}
-                    onClose={() => { setView('dashboard'); loadData(); }}
-                />
-            )}
-
-            {view === 'log' && (
-                <DailyLogForm
-                    userId={userId}
-                    habits={habits}
-                    onClose={() => { setView('dashboard'); loadData(); }}
-                />
-            )}
+            {view === 'add' && <HabitForm userId={userId} existingHabit={editingHabit} onClose={closeForm} />}
+            {view === 'log' && <DailyLogForm userId={userId} habits={habits} onClose={closeForm} />}
         </div>
     );
 };
