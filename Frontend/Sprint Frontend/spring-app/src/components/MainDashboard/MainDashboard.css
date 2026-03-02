@@ -8,6 +8,7 @@
 /* --- Metrics Row --- */
 .dashboard-metrics-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 1.5rem;
 }
 
@@ -18,6 +19,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     border: 1px solid #e5e7eb;
     flex: 1;
+    min-width: 200px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -39,7 +41,16 @@
     color: #4f46e5;
 }
 
-/* --- Grid Layout for Calendar and Habits --- */
+/* Text colors for the metric cards */
+.metric-value.text-green {
+    color: #216e39;
+}
+
+.metric-value.text-red {
+    color: #d73a49;
+}
+
+/* --- Grid Layout constraints added (minmax helps prevent blowout) --- */
 .dashboard-content-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -48,8 +59,14 @@
 
 @media (min-width: 1024px) {
     .dashboard-content-grid {
-        grid-template-columns: 3fr 2fr;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     }
+}
+
+.dashboard-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .dashboard-card {
@@ -58,6 +75,8 @@
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
 }
 
 .dashboard-card h2 {
@@ -85,10 +104,11 @@
 .calendar-header button {
     background: #f3f4f6;
     border: none;
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
     color: #4f46e5;
+    font-weight: bold;
     transition: background 0.2s;
 }
 
@@ -98,8 +118,9 @@
 
 .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    /* This stops grid columns from stretching past 1fr */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
 }
 
 .calendar-day-name {
@@ -111,14 +132,17 @@
 }
 
 .calendar-day {
-    min-height: 80px;
+    min-height: 85px;
     background: #f9fafb;
     border-radius: 6px;
     border: 1px solid #f3f4f6;
-    padding: 4px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+    /* CRITICAL: Allows ellipsis to work and prevents blowout */
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .calendar-day.empty {
@@ -143,30 +167,105 @@
     border-color: #c7d2fe;
 }
 
+/* --- Custom Tooltip Hover Logic --- */
+.sprint-indicator-wrapper {
+    position: relative;
+    width: 100%;
+}
+
 .sprint-indicator {
     background: #4f46e5;
     color: white;
-    font-size: 0.65rem;
-    padding: 2px 4px;
+    font-size: 0.7rem;
+    padding: 4px 6px;
     border-radius: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    box-sizing: border-box;
+    width: 100%;
+    cursor: pointer;
 }
+
+/* The Popup Box */
+.custom-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    width: max-content;
+    max-width: 200px;
+    z-index: 100;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+}
+
+/* The small arrow below the tooltip */
+.custom-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+}
+
+.sprint-indicator-wrapper:hover .custom-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #334155;
+    color: #818cf8;
+}
+
+.tooltip-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltip-task-item {
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.tooltip-empty {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-style: italic;
+}
+
 
 /* --- Habit Heatmap --- */
 .heatmap-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 2rem;
+    margin-top: 1rem;
 }
 
 .heatmap-grid {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
+    /* Explicit fixed width columns keep grid perfectly aligned */
+    grid-template-columns: repeat(10, 24px);
+    justify-content: center;
     gap: 6px;
     margin-bottom: 1.5rem;
+    width: 100%;
 }
 
 .heat-cell {
@@ -174,7 +273,6 @@
     height: 24px;
     border-radius: 4px;
     background: #ebedf0;
-    /* Default Empty */
     cursor: pointer;
     transition: transform 0.1s;
 }
@@ -184,40 +282,13 @@
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
-.heat-0 {
-    background: #ebedf0;
-}
-
-.heat-1 {
-    background: #c7d2fe;
-}
-
-.heat-2 {
-    background: #818cf8;
-}
-
-.heat-3 {
-    background: #4f46e5;
-}
-
-.heat-4 {
-    background: #312e81;
-}
-
-.heatmap-legend {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    color: #6b7280;
-}
-
 .empty-state {
     color: #6b7280;
     font-style: italic;
     text-align: center;
     padding: 2rem;
 }
+
 /* Good Habits Heatmap (Greens) */
 .heat-0 {
     background-color: #ebedf0;
@@ -260,11 +331,24 @@
     background-color: #990000;
 }
 
-/* Text colors for the metric cards */
-.text-green {
-    color: #216e39;
+/* Update this block (remove the static background color) */
+.sprint-indicator {
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    width: 100%;
+    cursor: pointer;
 }
 
-.text-red {
-    color: #d73a49;
+/* Update this block (remove the static color text) */
+.tooltip-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #334155;
 }
