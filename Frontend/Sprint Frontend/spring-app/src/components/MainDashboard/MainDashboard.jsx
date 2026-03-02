@@ -6,7 +6,6 @@ const MainDashboard = ({ userId }) => {
     const [sprints, setSprints] = useState([]);
     const [habits, setHabits] = useState([]);
     const [logs, setLogs] = useState([]);
-    const [currentDate, setCurrentDate] = useState(new Date());
 
     useEffect(() => {
         if (!userId) return;
@@ -18,7 +17,7 @@ const MainDashboard = ({ userId }) => {
             const [sprintRes, habitRes, logsRes] = await Promise.all([
                 sprintService.getAllByUser(userId),
                 habitService.getAll(userId),
-                habitService.getAllLogs(userId).catch(() => ({ data: [] })) // Fallback if API missing
+                habitService.getAllLogs(userId).catch(() => ({ data: [] }))
             ]);
             setSprints(sprintRes.data || []);
             setHabits(habitRes.data || []);
@@ -28,104 +27,44 @@ const MainDashboard = ({ userId }) => {
         }
     };
 
-    // --- CALENDAR LOGIC ---
-    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-    const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+    const goodHabits = habits.filter(h => !h.badHabit);
+    const badHabits = habits.filter(h => h.badHabit);
 
-    const renderCalendar = () => {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const daysInMonth = getDaysInMonth(year, month);
-        const firstDay = getFirstDayOfMonth(year, month);
+    const renderHabitHeatmap = (isBad = false) => {
+        const targetHabits = isBad ? badHabits : goodHabits;
+        const totalHabits = targetHabits.length;
 
-        const days = [];
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-        // Empty slots before month starts
-        for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
-        }
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
-            // Check if this date falls within any sprint
-            const activeSprints = sprints.filter(s => {
-                return dateStr >= s.startDate && dateStr <= s.endDate;
-            });
-
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
-
-            days.push(
-                <div key={d} className={`calendar-day ${isToday ? 'today' : ''} ${activeSprints.length > 0 ? 'sprint-active' : ''}`}>
-                    <span className="day-number">{d}</span>
-                    {activeSprints.map(s => (
-                        <div key={s.id} className="sprint-indicator" title={s.name}>{s.name}</div>
-                    ))}
-                </div>
-            );
-        }
-
-        return (
-            <div className="calendar-container">
-                <div className="calendar-header">
-                    <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>◀</button>
-                    <h3>{monthNames[month]} {year}</h3>
-                    <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>▶</button>
-                </div>
-                <div className="calendar-grid">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="calendar-day-name">{day}</div>
-                    ))}
-                    {days}
-                </div>
-            </div>
-        );
-    };
-
-    // --- HABIT HEATMAP LOGIC ---
-    const renderHabitHeatmap = () => {
-        const totalHabits = habits.length;
-        if (totalHabits === 0) return <p className="empty-state">No habits created yet. Go to Habits tab!</p>;
+        if (totalHabits === 0) return <p className="empty-state">No {isBad ? 'bad' : 'good'} habits found.</p>;
 
         const days = [];
-        // Generate last 30 days
         for (let i = 29; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
             const dateStr = d.toISOString().split('T')[0];
-
             const logForDay = logs.find(log => log.logDate === dateStr);
-            const completedCount = logForDay ? logForDay.completedHabitIds.length : 0;
+
+            let completedCount = 0;
+            if (logForDay) {
+                completedCount = logForDay.completedHabitIds.filter(id =>
+                    targetHabits.some(h => h.id === id)
+                ).length;
+            }
+
             const percentage = (completedCount / totalHabits) * 100;
+            const prefix = isBad ? 'bad-heat-' : 'heat-';
+            let intensityClass = `${prefix}0`;
 
-            let intensityClass = 'heat-0';
-            if (percentage > 0 && percentage <= 33) intensityClass = 'heat-1';
-            else if (percentage > 33 && percentage <= 66) intensityClass = 'heat-2';
-            else if (percentage > 66 && percentage < 100) intensityClass = 'heat-3';
-            else if (percentage === 100) intensityClass = 'heat-4';
+            if (percentage > 0 && percentage <= 33) intensityClass = `${prefix}1`;
+            else if (percentage > 33 && percentage <= 66) intensityClass = `${prefix}2`;
+            else if (percentage > 66 && percentage < 100) intensityClass = `${prefix}3`;
+            else if (percentage === 100) intensityClass = `${prefix}4`;
 
-            days.push(
-                <div
-                    key={dateStr}
-                    className={`heat-cell ${intensityClass}`}
-                    title={`${dateStr}: ${completedCount}/${totalHabits} habits completed`}
-                ></div>
-            );
+            days.push(<div key={dateStr} className={`heat-cell ${intensityClass}`} title={`${dateStr}: ${completedCount}/${totalHabits}`}></div>);
         }
 
         return (
             <div className="heatmap-container">
                 <div className="heatmap-grid">{days}</div>
-                <div className="heatmap-legend">
-                    <span>Less</span>
-                    <div className="heat-cell heat-0"></div>
-                    <div className="heat-cell heat-1"></div>
-                    <div className="heat-cell heat-2"></div>
-                    <div className="heat-cell heat-3"></div>
-                    <div className="heat-cell heat-4"></div>
-                    <span>More</span>
-                </div>
             </div>
         );
     };
@@ -133,25 +72,19 @@ const MainDashboard = ({ userId }) => {
     return (
         <div className="main-dashboard">
             <div className="dashboard-metrics-row">
-                <div className="metric-card">
-                    <h3>Active Sprints</h3>
-                    <p className="metric-value">{sprints.length}</p>
-                </div>
-                <div className="metric-card">
-                    <h3>Total Habits tracked</h3>
-                    <p className="metric-value">{habits.length}</p>
-                </div>
+                <div className="metric-card"><h3>Active Sprints</h3><p>{sprints.length}</p></div>
+                <div className="metric-card"><h3>Good Habits</h3><p style={{ color: 'green' }}>{goodHabits.length}</p></div>
+                <div className="metric-card"><h3>Bad Habits</h3><p style={{ color: 'red' }}>{badHabits.length}</p></div>
             </div>
 
             <div className="dashboard-content-grid">
-                <div className="dashboard-card calendar-card">
-                    <h2>Sprint Calendar</h2>
-                    {renderCalendar()}
+                <div className="dashboard-card">
+                    <h2>Good Habit Consistency</h2>
+                    {renderHabitHeatmap(false)}
                 </div>
-
-                <div className="dashboard-card habits-card">
-                    <h2>Habit Consistency (Last 30 Days)</h2>
-                    {renderHabitHeatmap()}
+                <div className="dashboard-card">
+                    <h2>Bad Habit Occurrences</h2>
+                    {renderHabitHeatmap(true)}
                 </div>
             </div>
         </div>

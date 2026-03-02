@@ -218,3 +218,53 @@
     text-align: center;
     padding: 2rem;
 }
+/* Good Habits Heatmap (Greens) */
+.heat-0 {
+    background-color: #ebedf0;
+}
+
+.heat-1 {
+    background-color: #9be9a8;
+}
+
+.heat-2 {
+    background-color: #40c463;
+}
+
+.heat-3 {
+    background-color: #30a14e;
+}
+
+.heat-4 {
+    background-color: #216e39;
+}
+
+/* Bad Habits Heatmap (Reds) - 0 is good (grey), 4 is bad (dark red) */
+.bad-heat-0 {
+    background-color: #ebedf0;
+}
+
+.bad-heat-1 {
+    background-color: #ffb3b3;
+}
+
+.bad-heat-2 {
+    background-color: #ff6666;
+}
+
+.bad-heat-3 {
+    background-color: #e60000;
+}
+
+.bad-heat-4 {
+    background-color: #990000;
+}
+
+/* Text colors for the metric cards */
+.text-green {
+    color: #216e39;
+}
+
+.text-red {
+    color: #d73a49;
+}
