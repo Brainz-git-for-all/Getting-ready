@@ -46,8 +46,8 @@ function App() {
     <div className="app-container">
       <aside className="sidebar-modern">
         <div className="sidebar-brand">
-          <div className="brand-logo">V</div>
-          <span className="brand-name">VELOCITY</span>
+          <div className="brand-logo">M</div>
+          <span className="brand-name">MY SPACE</span>
         </div>
 
         <nav className="nav-list">

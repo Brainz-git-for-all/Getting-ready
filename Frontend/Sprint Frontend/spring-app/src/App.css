@@ -14,7 +14,7 @@ body {
     font-family: 'Inter', system-ui, sans-serif;
     color: var(--text-main);
     background-color: var(--bg-main);
-    padding: 40px;
+   
 }
 
 .app-container {
