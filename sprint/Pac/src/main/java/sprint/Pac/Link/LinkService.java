@@ -43,8 +43,10 @@ public class LinkService {
        Link linkToBeUpdated = linkRepository.findById(id)
                .orElseThrow(() -> new RuntimeException("Link does not exist"));
         linkToBeUpdated.setLink(link.getLink());
-        linkToBeUpdated.setTime(link.getTime());
-        linkToBeUpdated.setType(link.getType());
+        linkToBeUpdated.setLookUpDeadline(link.getLookUpDeadline());
+        linkToBeUpdated.setCategory(link.getCategory());
+        linkToBeUpdated.setRemindAt(link.getRemindAt()
+        );
 
         return linkRepository.save(linkToBeUpdated);
 
