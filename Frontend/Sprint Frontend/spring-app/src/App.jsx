@@ -3,23 +3,17 @@ import Login from './components/Login/Login';
 import MainDashboard from './components/MainDashboard/MainDashboard';
 import SprintDashboard from './components/sprint/SprintDashboard';
 import HabitDashboard from './components/Habit/HabitDashboard';
+import LinkDashboard from './components/Link/LinkDashboard'; // Import the new dashboard
 import { authService } from './api';
 import './App.css';
 
-// SVG Icon Components for a professional look
 const Icons = {
-  Dashboard: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-  ),
-  Sprints: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-  ),
-  Habits: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-  ),
-  Logout: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-  )
+  // ... existing Dashboard, Sprints, Habits, Logout SVG icons ...
+  Dashboard: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>),
+  Sprints: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>),
+  Habits: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>),
+  Links: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>),
+  Logout: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>)
 };
 
 function App() {
@@ -60,6 +54,10 @@ function App() {
           <button className={`nav-link ${activeTab === 'habits' ? 'active' : ''}`} onClick={() => setActiveTab('habits')}>
             <Icons.Habits /> <span>Habits</span>
           </button>
+          {/* NEW LINKS TAB */}
+          <button className={`nav-link ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>
+            <Icons.Links /> <span>Saved Links</span>
+          </button>
         </nav>
 
         <div className="sidebar-bottom">
@@ -76,7 +74,7 @@ function App() {
             <p>Welcome back, {localStorage.getItem('username')}</p>
           </div>
           <div className="user-profile">
-            <div className="avatar">{localStorage.getItem('username')?.charAt(0)}</div>
+            <div className="avatar">{localStorage.getItem('username')?.charAt(0)?.toUpperCase() || 'U'}</div>
           </div>
         </header>
 
@@ -84,6 +82,7 @@ function App() {
           {activeTab === 'dashboard' && <MainDashboard userId={userId} />}
           {activeTab === 'sprints' && <SprintDashboard userId={userId} />}
           {activeTab === 'habits' && <HabitDashboard userId={userId} />}
+          {activeTab === 'links' && <LinkDashboard userId={userId} />}
         </section>
       </main>
     </div>

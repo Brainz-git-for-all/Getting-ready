@@ -51,4 +51,13 @@ export const sprintService = {
         api.patch(`/sprints/${sprintId}/tasks/${taskId}/complete?completed=${completed}`)
 };
 
+// ... existing authService, habitService, sprintService ...
+
+export const linkService = {
+    getAllByUser: (userId) => api.get(`/links/user/${userId}`),
+    create: (linkData) => api.post('/links', linkData),
+    update: (id, linkData) => api.put(`/links/${id}`, linkData),
+    delete: (id) => api.delete(`/links/${id}`),
+};
+
 export default api;
