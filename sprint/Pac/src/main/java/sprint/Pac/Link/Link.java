@@ -18,6 +18,7 @@ public class Link {
     private Long id; // FIXED: Changed from float to Long
 
     private String link;
+    private String description;
     private LocalDateTime remindAt;
     private LocalDateTime lookUpDeadline;
     private String category;

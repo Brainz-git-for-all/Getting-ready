@@ -74,7 +74,6 @@ const LinkDashboard = ({ userId }) => {
         setEditingLink(null);
     };
 
-    // ... inside LinkDashboard component, finishing the helper
     const formatDate = (dateString) => {
         if (!dateString) return "Not set";
         const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
@@ -118,6 +117,13 @@ const LinkDashboard = ({ userId }) => {
                                     {link.link} <ExternalLinkIcon />
                                 </a>
                             </h3>
+
+                            {/* Added Description Display */}
+                            {link.description && (
+                                <div className="link-description">
+                                    <p>{link.description}</p>
+                                </div>
+                            )}
 
                             <div className="link-footer">
                                 <div className="date-info">

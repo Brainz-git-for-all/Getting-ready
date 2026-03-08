@@ -5,6 +5,7 @@ const LinkForm = ({ userId, initialData, onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
         link: '',
         category: '',
+        description: '', // Integrated description
         remindAt: '',
         lookUpDeadline: ''
     });
@@ -20,6 +21,7 @@ const LinkForm = ({ userId, initialData, onSubmit, onCancel }) => {
             setFormData({
                 link: initialData.link || '',
                 category: initialData.category || '',
+                description: initialData.description || '',
                 remindAt: formatForInput(initialData.remindAt),
                 lookUpDeadline: formatForInput(initialData.lookUpDeadline)
             });
@@ -38,6 +40,7 @@ const LinkForm = ({ userId, initialData, onSubmit, onCancel }) => {
         const payload = {
             link: formData.link,
             category: formData.category,
+            description: formData.description,
             remindAt: formData.remindAt ? `${formData.remindAt}:00` : null,
             lookUpDeadline: formData.lookUpDeadline ? `${formData.lookUpDeadline}:00` : null,
             userId: parseInt(userId, 10)
@@ -74,9 +77,21 @@ const LinkForm = ({ userId, initialData, onSubmit, onCancel }) => {
                             type="text"
                             name="category"
                             className="form-control"
-                            placeholder="e.g., Inspiration, Tutorial, Work"
+                            placeholder="e.g., AI, Research, Software"
                             value={formData.category}
                             onChange={handleChange}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Description</label>
+                        <textarea
+                            name="description"
+                            className="form-control"
+                            placeholder="What is this resource for?"
+                            value={formData.description}
+                            onChange={handleChange}
+                            rows="3"
                         />
                     </div>
 
