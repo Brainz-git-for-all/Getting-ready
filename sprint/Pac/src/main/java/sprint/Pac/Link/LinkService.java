@@ -40,6 +40,7 @@ public class LinkService {
         linkToBeUpdated.setLookUpDeadline(link.getLookUpDeadline());
         linkToBeUpdated.setCategory(link.getCategory());
         linkToBeUpdated.setRemindAt(link.getRemindAt());
+        linkToBeUpdated.setDescription(link.getDescription());
         // Note: We don't update the userId here to prevent transferring ownership
 
         return linkRepository.save(linkToBeUpdated);
