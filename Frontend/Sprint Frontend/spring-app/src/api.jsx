@@ -60,4 +60,13 @@ export const linkService = {
     delete: (id) => api.delete(`/links/${id}`),
 };
 
+// Add this alongside your existing services in api.js
+
+export const reminderService = {
+    getAllByUser: (userId) => api.get(`/users/${userId}/reminders`),
+    create: (userId, reminderData) => api.post(`/users/${userId}/reminders`, reminderData),
+    update: (userId, id, reminderData) => api.put(`/users/${userId}/reminders/${id}`, reminderData),
+    delete: (userId, id) => api.delete(`/users/${userId}/reminders/${id}`),
+};
+
 export default api;
