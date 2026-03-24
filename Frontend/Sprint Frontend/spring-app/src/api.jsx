@@ -9,12 +9,23 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        // FIXED: Prevent infinite loops!
+        // If the 401 comes FROM the refresh or login endpoint, do NOT try to refresh again.
+        if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
+            return Promise.reject(error);
+        }
+
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             try {
+                // Attempt to refresh the token
                 await api.post('/auth/refresh');
+
+                // If successful, retry the original request
                 return api(originalRequest);
             } catch (refreshError) {
+                // If the refresh fails (e.g., refresh token expired), clear local storage and force login
                 localStorage.clear();
                 window.location.href = '/';
                 return Promise.reject(refreshError);
@@ -23,6 +34,8 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+// ... keep your authService, habitService, sprintService, etc. below exactly as they are ...
 
 export const authService = {
     login: (credentials) => api.post('/auth/login', credentials),

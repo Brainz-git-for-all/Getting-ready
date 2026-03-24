@@ -1,0 +1,58 @@
+services:
+  frontend2:
+    image: sprint-react-image
+    build: "C:/Users/Brainz/Desktop/Getting-ready/Frontend/Sprint Frontend/spring-app"
+    ports:
+      - "5173:5173"
+    command: npm run dev -- --host
+    volumes:
+      # SURGICAL MOUNTS: We only map the code you actually edit.
+      # This guarantees the container's Linux node_modules remain completely safe and untouched!
+      - "C:/Users/Brainz/Desktop/Getting-ready/Frontend/Sprint Frontend/spring-app/src:/app/src"
+      - "C:/Users/Brainz/Desktop/Getting-ready/Frontend/Sprint Frontend/spring-app/public:/app/public"
+      - "C:/Users/Brainz/Desktop/Getting-ready/Frontend/Sprint Frontend/spring-app/index.html:/app/index.html"
+      - "C:/Users/Brainz/Desktop/Getting-ready/Frontend/Sprint Frontend/spring-app/vite.config.js:/app/vite.config.js"
+    depends_on:
+      - backend
+    networks:
+      - sprint-network
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    # (Removed the Maven commands and volumes here so it boots normally)
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/sprint?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=amina@tijan@123
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    networks:
+      - sprint-network
+
+  mysql-db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=amina@tijan@123
+      - MYSQL_DATABASE=sprint
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sprint-network
+
+networks:
+  sprint-network:
+    driver: bridge
+
+volumes:
+  db_data:
