@@ -7,12 +7,16 @@ import './Schedule.css';
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 
 const ScheduleDashboard = ({ userId }) => {
+    // Original Data Logic remains untouched
     const [blocks, setBlocks] = useState([]);
     const [habits, setHabits] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [view, setView] = useState('schedule');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState(null);
+
+    // NEW: UI State for the Zoom Slider (Default 14 hours visible)
+    const [visibleHours, setVisibleHours] = useState(14);
 
     const fetchData = async () => {
         if (!userId || userId === 'null') return;
@@ -47,7 +51,7 @@ const ScheduleDashboard = ({ userId }) => {
     };
 
     const getDayItems = (day) => {
-        const dayBlocks = blocks.filter(b => b.day === day).sort((a,b) => a.startTime.localeCompare(b.startTime));
+        const dayBlocks = blocks.filter(b => b.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
         const res = [];
         let last = "00:00";
         dayBlocks.forEach(b => {
@@ -59,10 +63,49 @@ const ScheduleDashboard = ({ userId }) => {
         return res;
     };
 
+    // DOM-based Optimistic UI Handlers
+    const handleLogClick = (e, h) => {
+        const btn = e.currentTarget;
+        btn.innerText = "Saved!";
+        btn.classList.add("btn-success");
+        habitService.saveTodaysLog(userId, new Date().toISOString().split('T')[0], [h.id])
+            .then(() => setTimeout(() => fetchData(), 1000));
+    };
+
+    const handleTaskToggle = (e, t) => {
+        const btn = e.currentTarget;
+        const span = btn.previousElementSibling;
+        const isCompleting = !span.classList.contains("done");
+
+        if (isCompleting) {
+            span.classList.add("done");
+            btn.innerText = "Undo";
+        } else {
+            span.classList.remove("done");
+            btn.innerText = "✓";
+        }
+        sprintService.toggleTaskCompletion(t.sprintId, t.id, isCompleting).then(() => fetchData());
+    };
+
     if (view === 'categories') return <CategoryDashboard userId={userId} onBack={() => setView('schedule')} />;
 
     return (
-        <div className="viewport-container-schedule">
+        // Inline style passes the slider value dynamically to CSS variables!
+        <div className="viewport-container-schedule" style={{ '--visible-hours': visibleHours }}>
+
+            <div className="schedule-toolbar">
+                <span className="toolbar-label">Scale:</span>
+                <input
+                    type="range"
+                    min="8"
+                    max="24"
+                    value={visibleHours}
+                    onChange={(e) => setVisibleHours(Number(e.target.value))}
+                    className="zoom-slider"
+                />
+                <span className="toolbar-value">{visibleHours}h View</span>
+            </div>
+
             <div className="timetable-main">
                 <div className="day-labels-sticky">
                     <div className="time-corner">Time</div>
@@ -89,17 +132,36 @@ const ScheduleDashboard = ({ userId }) => {
                                         return (
                                             <div key={idx} className="tba-grid-cell"
                                                 style={{ gridRow: `${start} / ${end}` }}
-                                                onClick={() => { setModalData(item); setIsModalOpen(true); }} />
+                                                onClick={() => { setModalData(item); setIsModalOpen(true); }}
+                                            />
                                         );
                                     }
 
                                     const catHabits = habits.filter(h => h.category?.id === item.category?.id);
                                     const catTasks = tasks.filter(t => t.category?.id === item.category?.id);
+                                    const totalItems = catHabits.length + catTasks.length;
 
                                     return (
                                         <div key={item.id} className="block-grid-cell"
                                             style={{ gridRow: `${start} / ${end}`, '--accent': item.category?.color || '#4f46e5' }}>
-                                            <div className="block-content">{item.category?.name}</div>
+
+                                            <div className="block-content">
+                                                <div className="block-cat">{item.category?.name}</div>
+                                                <div className="block-previews">
+                                                    {totalItems > 0 && totalItems <= 2 && (
+                                                        <>
+                                                            {catHabits.map(h => <div key={h.id} className="preview-text h-text">{h.name}</div>)}
+                                                            {catTasks.map(t => <div key={t.id} className="preview-text t-text">{t.name}</div>)}
+                                                        </>
+                                                    )}
+                                                    {totalItems >= 3 && (
+                                                        <>
+                                                            {catHabits.map(h => <div key={h.id} className="dot h" title={h.name}></div>)}
+                                                            {catTasks.map(t => <div key={t.id} className="dot t" title={t.name}></div>)}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
 
                                             <div className="block-popover">
                                                 <div className="pop-header">
@@ -110,13 +172,15 @@ const ScheduleDashboard = ({ userId }) => {
                                                     {catHabits.map(h => (
                                                         <div key={h.id} className="pop-row">
                                                             <span>{h.name}</span>
-                                                            <button onClick={() => habitService.saveTodaysLog(userId, new Date().toISOString().split('T')[0], [h.id]).then(fetchData)}>Log</button>
+                                                            <button onClick={(e) => handleLogClick(e, h)}>Log</button>
                                                         </div>
                                                     ))}
                                                     {catTasks.map(t => (
                                                         <div key={t.id} className="pop-row">
                                                             <span className={t.completed ? 'done' : ''}>{t.name}</span>
-                                                            <button onClick={() => sprintService.toggleTaskCompletion(t.sprintId, t.id, !t.completed).then(fetchData)}>✓</button>
+                                                            <button onClick={(e) => handleTaskToggle(e, t)}>
+                                                                {t.completed ? 'Undo' : '✓'}
+                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>

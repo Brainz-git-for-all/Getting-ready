@@ -1,13 +1,71 @@
-/* --- Viewport Layout --- */
+/* --- CRITICAL FIX 2: Override External Boundaries --- */
+:global(.viewport-content),
+.viewport-content {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* --- CRITICAL FIX 1: Viewport Layout (Strict Zero-Scroll Lock) --- */
 .viewport-container-schedule {
-    height: 100%;
+    /*
+       DYNAMIC CALCULATION:
+       Takes the React slider value (--visible-hours).
+       Available Height = 100vh minus Headers, Padding, Toolbar, & Sticky Days (~220px).
+    */
+    --available-height: calc(100vh - 220px);
+    --hour-height: calc(var(--available-height) / var(--visible-hours));
+    --row-height: calc(var(--hour-height) / 2);
+
+    flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-/* --- Global Header Button Styles (For App.js buttons) --- */
+/* --- Scale Slider Toolbar --- */
+.schedule-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    gap: 12px;
+    height: 44px;
+    box-sizing: border-box;
+}
+
+.zoom-slider {
+    width: 150px;
+    accent-color: #4f46e5;
+    cursor: pointer;
+}
+
+.toolbar-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+}
+
+.toolbar-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    width: 60px;
+}
+
+/* --- Global Header Button Styles --- */
 .btn-primary-flat {
     background: #4f46e5;
     color: white;
@@ -41,7 +99,7 @@
 /* --- Sticky Day Headers --- */
 .day-labels-sticky {
     display: grid;
-    grid-template-columns: 50px repeat(7, 1fr);
+    grid-template-columns: 64px repeat(7, 1fr);
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
     position: sticky;
@@ -49,8 +107,9 @@
     z-index: 100;
 }
 
-.day-label, .time-corner {
-    height: 40px;
+.day-label,
+.time-corner {
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -58,90 +117,350 @@
     font-weight: 800;
     color: #64748b;
     text-transform: uppercase;
-    border-right: 1px solid #f1f5f9;
+    border-right: 1px solid #e2e8f0;
 }
 
-/* --- Grid Body --- */
+/* --- Grid Body (Locked internal scroll only) --- */
 .grid-scroll-area {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     background: #ffffff;
 }
 
 .grid-viewport {
     display: grid;
-    grid-template-columns: 50px repeat(7, 1fr);
-    grid-template-rows: repeat(48, minmax(35px, 1fr));
+    grid-template-columns: 64px repeat(7, 1fr);
     height: fit-content;
 }
 
+/* Mathematical Grid Alignment */
 .time-column {
     display: grid;
-    grid-template-rows: repeat(24, 2fr);
+    grid-template-rows: repeat(24, var(--hour-height));
     background: #f8fafc;
     border-right: 1px solid #e2e8f0;
 }
 
 .hour-cell {
-    height: 70px;
+    height: var(--hour-height);
     display: flex;
     align-items: flex-start;
     justify-content: center;
     font-size: 0.65rem;
+    font-weight: 600;
     color: #94a3b8;
-    padding-top: 6px;
-    border-bottom: 1px solid #f1f5f9;
+    padding-top: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    box-sizing: border-box;
 }
 
 .day-column {
     display: grid;
-    grid-template-rows: repeat(48, 1fr);
+    grid-template-rows: repeat(48, var(--row-height));
     border-right: 1px solid #f1f5f9;
     position: relative;
 }
 
 /* --- Block Visuals --- */
 .block-grid-cell {
-    margin: 1px;
+    width: calc(100% - 4px);
+    margin: 2px;
     background: white;
     border: 1px solid #e2e8f0;
-    border-left: 3.5px solid var(--accent);
-    border-radius: 4px;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
     position: relative;
-    overflow: hidden;
-    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    z-index: 10;
 }
 
-.block-content { padding: 4px; height: 100%; display: flex; flex-direction: column; gap: 2px; }
-.block-cat { font-size: 0.65rem; font-weight: 700; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.block-content {
+    padding: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+}
 
-.block-previews { display: flex; flex-wrap: wrap; gap: 2px; }
-.dot { width: 5px; height: 5px; border-radius: 50%; }
-.dot.h { background: #10b981; }
-.dot.t { background: #4f46e5; }
+.block-cat {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-/* --- Hover Reveal --- */
-.block-grid-cell:hover { overflow: visible; z-index: 200; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+/* Smart Visualizations */
+.block-previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.preview-text {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-weight: 600;
+}
+
+.h-text {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.t-text {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.dot.h {
+    background: #10b981;
+}
+
+.dot.t {
+    background: #4f46e5;
+}
+
+/* --- Hover Reveal & Popover Alignment --- */
+.block-grid-cell:hover {
+    z-index: 200;
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent);
+}
+
 .block-popover {
     position: absolute;
-    top: 0; left: 0; width: 220px;
+    top: -1px;
+    left: calc(100% + 8px);
+    width: 256px;
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 12px;
+    padding: 16px;
     display: none;
     flex-direction: column;
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    cursor: default;
 }
-.block-grid-cell:hover .block-popover { display: flex; }
 
-.pop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
-.pop-header strong { font-size: 0.85rem; color: #1e293b; }
-.pop-del { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; }
+.block-grid-cell:hover .block-popover {
+    display: flex;
+}
 
-.pop-body { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
-.pop-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; background: #f8fafc; padding: 4px 8px; border-radius: 4px; }
-.pop-row span.done { text-decoration: line-through; color: #94a3b8; }
-.pop-row button { border: 1px solid #e2e8f0; background: white; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 0.7rem; }
+.day-column:nth-last-child(-n+2) .block-popover {
+    left: auto;
+    right: calc(100% + 8px);
+}
 
-.tba-grid-cell { cursor: cell; border: 0.5px dotted #e2e8f0; }
-.tba-grid-cell:hover { background: #f1f5f9; }
+.pop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.pop-header strong {
+    font-size: 0.85rem;
+    color: #1e293b;
+}
+
+.pop-del {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.pop-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.pop-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    background: #f8fafc;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.pop-row span.done {
+    text-decoration: line-through;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.pop-row button {
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.pop-row button:hover {
+    background: #f1f5f9;
+}
+
+.pop-row button.btn-success {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+    pointer-events: none;
+}
+
+/* --- CRITICAL FIX 4: The "Ghost Grid" Cells --- */
+.tba-grid-cell {
+    cursor: pointer;
+    border: 1px dashed transparent;
+    border-radius: 8px;
+    margin: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 1;
+}
+
+.tba-grid-cell:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.tba-grid-cell::after {
+    content: "+";
+    font-size: 24px;
+    line-height: 1;
+    color: #38bdf8;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.tba-grid-cell:hover::after {
+    opacity: 1;
+}
+
+/* --- Modals Overlay --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+/* --- Block Visuals --- */
+.block-grid-cell {
+    width: calc(100% - 4px);
+    margin: 1px 2px;
+    /* Reduced vertical margin from 2px to 1px to give text more breathing room */
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    /* Slightly softer radius for thin blocks */
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+}
+
+.block-content {
+    padding: 2px 6px;
+    /* Ultra-tight vertical padding (2px) so text survives the shrink */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+    justify-content: flex-start;
+}
+
+.block-cat {
+    font-size: 0.68rem;
+    /* Slightly smaller font to fit tight rows */
+    font-weight: 700;
+    line-height: 1.2;
+    /* Tightens the spacing above/below the letters */
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    /* BULLETPROOF: Forbids Flexbox from hiding the title when space is low */
+}
+
+/* Smart Visualizations */
+.block-previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.preview-text {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-weight: 600;
+}
+
+.h-text {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.t-text {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dot.h {
+    background: #10b981;
+}
+
+.dot.t {
+    background: #4f46e5;
+}
