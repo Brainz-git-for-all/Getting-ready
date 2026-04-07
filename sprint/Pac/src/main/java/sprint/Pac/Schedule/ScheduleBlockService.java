@@ -3,41 +3,37 @@ package sprint.Pac.Schedule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.util.List;
-
 @Service
 public class ScheduleBlockService {
-
     @Autowired
-    private ScheduleBlockRepository scheduleBlockRepository;
+    private ScheduleBlockRepository repository;
 
     public ScheduleBlock createScheduleBlock(ScheduleBlock newBlock) {
-
-        // 1. Fetch all existing blocks for this user on this specific day
-        List<ScheduleBlock> existingBlocks = scheduleBlockRepository
-                .findByUserIdAndDay(newBlock.getUserId(), newBlock.getDay());
-
-        // 2. Check for overlaps
-        for (ScheduleBlock existing : existingBlocks) {
-            boolean isOverlapping =
-                    newBlock.getStartTime().isBefore(existing.getEndTime()) &&
-                            newBlock.getEndTime().isAfter(existing.getStartTime());
-
-            if (isOverlapping) {
-                // If they overlap, throw an exception so it doesn't save!
-                throw new IllegalArgumentException(
-                        "This time block overlaps with an existing block from "
-                                + existing.getStartTime() + " to " + existing.getEndTime()
-                );
-            }
-        }
-
-        // 3. Optional: Make sure Start Time is actually before End Time
         if (!newBlock.getStartTime().isBefore(newBlock.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time.");
         }
+        // Use user.getId() instead of userId
+        List<ScheduleBlock> existing = repository.findByUserIdAndDay(newBlock.getUser().getId(), newBlock.getDay());
 
-        // 4. If no overlaps, save it to the database!
-        return scheduleBlockRepository.save(newBlock);
+        for (ScheduleBlock b : existing) {
+            if (newBlock.getStartTime().isBefore(b.getEndTime()) && newBlock.getEndTime().isAfter(b.getStartTime())) {
+                throw new IllegalArgumentException("Overlap detected.");
+            }
+        }
+        return repository.save(newBlock);
+    }
+
+    public List<ScheduleBlock> getAllBlocksByUser(Long userId) {
+        return repository.findByUserId(userId);
+    }
+
+    public List<ScheduleBlock> getBlocksByUserAndDay(Long userId, DayOfWeek day) {
+        return repository.findByUserIdAndDay(userId, day);
+    }
+
+    public void deleteScheduleBlock(Long id) {
+        repository.deleteById(id);
     }
 }

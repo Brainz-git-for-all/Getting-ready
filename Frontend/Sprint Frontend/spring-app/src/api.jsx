@@ -82,4 +82,29 @@ export const reminderService = {
     delete: (userId, id) => api.delete(`/users/${userId}/reminders/${id}`),
 };
 
+export const scheduleBlockService = {
+    // Logic to handle "ALL" or specific days
+    getByUserAndDay: (userId, day) => {
+        if (day === 'ALL') {
+            return api.get(`/schedule-blocks/user/${userId}/all`);
+        }
+        return api.get(`/schedule-blocks/user/${userId}/day/${day}`);
+    },
+    create: (blockData) => api.post('/schedule-blocks', blockData),
+    update: (id, blockData) => api.put(`/schedule-blocks/${id}`, blockData),
+    delete: (id) => api.delete(`/schedule-blocks/${id}`),
+};
+
+// Add this near your other services in api.js
+
+
+export const categoryService = {
+    // Fetch categories by specific user ID
+    getAllByUser: (userId) => api.get(`/categories/user/${userId}`),
+
+    create: (categoryData) => api.post('/categories', categoryData),
+    update: (id, categoryData) => api.put(`/categories/${id}`, categoryData),
+    delete: (id) => api.delete(`/categories/${id}`)
+};
+
 export default api;

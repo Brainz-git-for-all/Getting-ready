@@ -1,227 +1,99 @@
 import React, { useState, useEffect } from 'react';
-import { sprintService } from '../../api';
-import './SprintForm.css';
+import { sprintService, categoryService } from '../../api';
 
 const SprintForm = ({ onSprintCreated, initialData, userId }) => {
-    const [sprint, setSprint] = useState({
-        name: '',
-        startDate: '',
-        endDate: '',
-        tasks: []
-    });
-
+    const [sprint, setSprint] = useState({ name: '', startDate: '', endDate: '', tasks: [] });
+    const [categories, setCategories] = useState([]);
     const [showTaskModal, setShowTaskModal] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [newCatColor, setNewCatColor] = useState('#3498db');
+    const [newTask, setNewTask] = useState({ name: '', priority: 'Medium', startDate: '', endDate: '', completed: false, categoryId: '' });
 
-    // Task state mimicking the updated backend Entity (defaulting completed to false)
-    const [newTask, setNewTask] = useState({
-        name: '',
-        priority: 'Medium',
-        startDate: '',
-        endDate: '',
-        completed: false
-    });
+    const fetchCategories = async () => {
+        if (!userId) return;
+        try {
+            const res = await categoryService.getAllByUser(userId);
+            setCategories(res.data);
+        } catch (err) { console.error("Category fetch failed", err); }
+    };
 
-    useEffect(() => {
-        if (initialData) {
-            setSprint(initialData);
-        }
-    }, [initialData]);
+    useEffect(() => { fetchCategories(); }, [userId]);
+    useEffect(() => { if (initialData) setSprint(initialData); }, [initialData]);
+
+    const handleCreateCategory = async () => {
+        if (!newCatName.trim()) return;
+        try {
+            // FIXED: Send userId as Long to match ActivityCategory.java
+            await categoryService.create({ name: newCatName, color: newCatColor, userId: userId });
+            setNewCatName('');
+            await fetchCategories();
+        } catch (err) { alert("Error creating category"); }
+    };
 
     const handleAddTask = (e) => {
         e.preventDefault();
-        if (!newTask.name.trim() || !newTask.startDate || !newTask.endDate) return;
-
-        setSprint({
-            ...sprint,
-            tasks: [...sprint.tasks, newTask]
-        });
-
-        // Reset task modal
-        setNewTask({ name: '', priority: 'Medium', startDate: '', endDate: '', completed: false });
+        if (!newTask.name.trim()) return;
+        const taskToAdd = { ...newTask, category: newTask.categoryId ? { id: parseInt(newTask.categoryId) } : null };
+        setSprint({ ...sprint, tasks: [...sprint.tasks, taskToAdd] });
+        setNewTask({ name: '', priority: 'Medium', startDate: '', endDate: '', completed: false, categoryId: '' });
         setShowTaskModal(false);
-    };
-
-    const handleRemoveTask = async (indexToRemove) => {
-        const taskToRemove = sprint.tasks[indexToRemove];
-
-        // If editing an existing sprint and deleting a task that's already in the DB
-        if (initialData?.id && taskToRemove.id) {
-            if (window.confirm("Permanently delete this task from the sprint?")) {
-                try {
-                    await sprintService.deleteTask(initialData.id, taskToRemove.id);
-                } catch (err) {
-                    console.error("Failed to delete task directly", err);
-                    return;
-                }
-            } else {
-                return;
-            }
-        }
-
-        setSprint({
-            ...sprint,
-            tasks: sprint.tasks.filter((_, index) => index !== indexToRemove)
-        });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Include userId so backend tracks who owns this
-            const payload = { ...sprint, userId };
-
+            // FIXED: Change user object to flat Long userId to match Sprint.java
+            const payload = { ...sprint, userId: userId };
             if (initialData?.id) {
-                // UPDATE (PUT)
                 await sprintService.update(initialData.id, payload);
-
-                // If tasks were newly added during Edit mode (they lack an ID), hit the Add Task endpoint
-                const freshlyAddedTasks = sprint.tasks.filter(t => !t.id);
-                for (const task of freshlyAddedTasks) {
-                    await sprintService.addTask(initialData.id, task);
-                }
             } else {
-                // CREATE (POST) - Backend cascading saves tasks automatically on creation
                 await sprintService.create(payload);
             }
             onSprintCreated();
-        } catch (error) {
-            console.error("Save failed:", error);
-
-            // Extract the actual error message sent from the backend or Axios
-            const backendError = error.response?.data;
-            const fallbackError = error.message || "Unknown error occurred.";
-
-            // Show the true error
-            alert(`Failed to save: ${typeof backendError === 'string' ? backendError : fallbackError}`);
-        }
-    };
-
-    const openTaskModal = () => {
-        if (!sprint.startDate || !sprint.endDate) {
-            alert("Please set Sprint Start and End dates before adding tasks!");
-            return;
-        }
-        setShowTaskModal(true);
+        } catch (error) { alert("Save failed."); }
     };
 
     return (
         <div className="form-card">
             <h2>{initialData ? 'Edit Sprint' : 'Create New Sprint'}</h2>
             <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>Sprint Name</label>
-                    <input
-                        type="text"
-                        value={sprint.name}
-                        onChange={e => setSprint({ ...sprint, name: e.target.value })}
-                        required
-                    />
+                <div className="input-group"><label>Sprint Name</label><input type="text" value={sprint.name} onChange={e => setSprint({ ...sprint, name: e.target.value })} required /></div>
+                <div className="time-row">
+                    <div className="input-group"><label>Start Date</label><input type="date" value={sprint.startDate} onChange={e => setSprint({ ...sprint, startDate: e.target.value })} required /></div>
+                    <div className="input-group"><label>End Date</label><input type="date" value={sprint.endDate} onChange={e => setSprint({ ...sprint, endDate: e.target.value })} required /></div>
                 </div>
-
-                <div className="form-group-row">
-                    <div className="form-group">
-                        <label>Start Date</label>
-                        <input
-                            type="date"
-                            value={sprint.startDate}
-                            onChange={e => setSprint({ ...sprint, startDate: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>End Date</label>
-                        <input
-                            type="date"
-                            value={sprint.endDate}
-                            onChange={e => setSprint({ ...sprint, endDate: e.target.value })}
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div className="task-header-row">
-                    <h3>Tasks ({sprint.tasks.length})</h3>
-                    <button type="button" className="btn-open-modal" onClick={openTaskModal}>
-                        + Add Task
-                    </button>
-                </div>
-
+                <div style={{ margin: '20px 0' }}><button type="button" className="btn-add-cat" onClick={() => setShowTaskModal(true)}>+ Add Task</button></div>
                 <ul className="task-preview-list">
-                    {sprint.tasks.map((t, index) => (
-                        <li key={index} className="task-item">
-                            <div className="task-info">
-                                <strong style={{ textDecoration: t.completed ? 'line-through' : 'none' }}>
-                                    {t.name}
-                                </strong>
-                                <span style={{ fontSize: '0.8rem', color: '#666', marginLeft: '10px' }}>
-                                    ({t.startDate} - {t.endDate})
-                                </span>
-                            </div>
-                            <button type="button" onClick={() => handleRemoveTask(index)} className="btn-remove">✕</button>
+                    {sprint.tasks.map((t, idx) => (
+                        <li key={idx} style={{ fontSize: '0.8rem', padding: '5px', borderBottom: '1px solid #eee' }}>
+                            {t.name} {t.category && <span style={{ color: t.category.color }}>({t.category.name})</span>}
                         </li>
                     ))}
                 </ul>
-
-                <button type="submit" className="btn-submit">
-                    {initialData ? 'Update Sprint' : 'Save Full Sprint'}
-                </button>
+                <button type="submit" className="btn-save" style={{ width: '100%', marginTop: '20px' }}>Save Sprint</button>
             </form>
 
-            {/* TASK CREATION MODAL */}
             {showTaskModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>New Task</h3>
-                        <div className="form-group">
-                            <label>Task Title</label>
-                            <input
-                                autoFocus
-                                type="text"
-                                value={newTask.name}
-                                onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                                placeholder="What needs to be done?"
-                            />
-                        </div>
-
-                        <div className="form-group-row">
-                            <div className="form-group">
-                                <label>Start Date</label>
-                                <input
-                                    type="date"
-                                    min={sprint.startDate}
-                                    max={sprint.endDate}
-                                    value={newTask.startDate}
-                                    onChange={e => setNewTask({ ...newTask, startDate: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>End Date</label>
-                                <input
-                                    type="date"
-                                    min={newTask.startDate || sprint.startDate}
-                                    max={sprint.endDate}
-                                    value={newTask.endDate}
-                                    onChange={e => setNewTask({ ...newTask, endDate: e.target.value })}
-                                />
+                    <div className="modal-box">
+                        <h3>Add Task</h3>
+                        <div className="category-manager-section">
+                            <label className="section-label">Quick Add Category</label>
+                            <div className="category-creator-row">
+                                <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="New Category" />
+                                <button type="button" onClick={handleCreateCategory}>Add</button>
                             </div>
                         </div>
-
-                        <div className="form-group">
-                            <label>Priority</label>
-                            <select
-                                value={newTask.priority}
-                                onChange={e => setNewTask({ ...newTask, priority: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                            >
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
+                        <div className="input-group"><label>Task Name</label><input type="text" value={newTask.name} onChange={e => setNewTask({ ...newTask, name: e.target.value })} /></div>
+                        <div className="input-group"><label>Category</label>
+                            <select value={newTask.categoryId} onChange={e => setNewTask({ ...newTask, categoryId: e.target.value })}>
+                                <option value="">-- No Category --</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
-
-                        <div className="modal-actions">
-                            <button type="button" className="btn-cancel" onClick={() => setShowTaskModal(false)}>Cancel</button>
-                            <button type="button" className="btn-confirm" onClick={handleAddTask}>Add to Sprint</button>
+                        <div className="modal-footer">
+                            <button onClick={() => setShowTaskModal(false)}>Cancel</button>
+                            <button className="btn-save" onClick={handleAddTask}>Add Task</button>
                         </div>
                     </div>
                 </div>

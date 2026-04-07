@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import sprint.Pac.Activity.ActivityCategory;
 
 import java.time.LocalDate;
 
@@ -26,9 +27,13 @@ public class Task {
 
     // <--- NEW: Track if the task is finished
     private boolean completed = false;
-
+    private String scheduleforWhat;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference
     private Sprint sprint;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private ActivityCategory category;
 }
