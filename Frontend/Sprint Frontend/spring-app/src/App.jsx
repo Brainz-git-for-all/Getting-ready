@@ -31,7 +31,7 @@ function App() {
     }
   };
 
-  if (!isLoggedIn) return null; // Logic for Login/Register omitted for brevity
+  if (!isLoggedIn) return null;
 
   return (
     <div className="app-container">
@@ -73,9 +73,7 @@ function App() {
             <h2>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Dashboard</h2>
             <p>Welcome back, {localStorage.getItem('username')}</p>
           </div>
-
           <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {/* --- NEW GLOBAL ACTIONS --- */}
             {activeTab === 'schedule' && (
               <div className="global-schedule-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn-secondary-flat" onClick={() => window.dispatchEvent(new CustomEvent('toggle-cat-view'))}>
@@ -89,7 +87,6 @@ function App() {
             <div className="avatar">{localStorage.getItem('username')?.charAt(0)?.toUpperCase() || 'U'}</div>
           </div>
         </header>
-
         <section className="viewport-content">
           {activeTab === 'dashboard' && <MainDashboard userId={userId} />}
           {activeTab === 'schedule' && <ScheduleDashboard userId={userId} />}

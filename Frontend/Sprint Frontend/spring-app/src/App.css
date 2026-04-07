@@ -14,19 +14,22 @@ body {
     font-family: 'Inter', system-ui, sans-serif;
     color: var(--text-main);
     background-color: var(--bg-main);
-
 }
 
+/* 1. Root Container locked to viewport */
 .app-container {
     display: flex;
     height: 100vh;
+    width: 100vw;
     overflow: hidden;
+    /* Prevents whole page from scrolling */
 }
 
-/* --- Sidebar Modern (Collapsible) --- */
+/* Sidebar hover behavior left completely intact */
 .sidebar-modern {
     width: 80px;
-    /* Reduced default width */
+    height: 100vh;
+    flex-shrink: 0;
     background: var(--bg-side);
     color: var(--white);
     display: flex;
@@ -34,14 +37,12 @@ body {
     padding: 24px 16px;
     box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
     box-sizing: border-box;
-    /* Crucial for padding/width calculation */
     transition: width 0.3s ease, padding 0.3s ease;
     overflow-x: hidden;
     white-space: nowrap;
-    /* Prevents text from breaking onto new lines */
+    z-index: 20;
 }
 
-/* Expand sidebar on hover */
 .sidebar-modern:hover {
     width: 260px;
     padding: 24px;
@@ -53,11 +54,9 @@ body {
     gap: 16px;
     margin-bottom: 40px;
     padding-left: 8px;
-    /* Centers the 32px logo visually in the 80px sidebar */
     transition: padding 0.3s ease, gap 0.3s ease;
 }
 
-/* Reset spacing when expanded */
 .sidebar-modern:hover .sidebar-brand {
     padding-left: 0;
     gap: 12px;
@@ -66,7 +65,6 @@ body {
 .brand-logo {
     background: var(--primary);
     min-width: 32px;
-    /* Prevent logo from squishing */
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -85,7 +83,6 @@ body {
     transition: opacity 0.2s ease, visibility 0s linear 0.2s;
 }
 
-/* Show brand name on hover */
 .sidebar-modern:hover .brand-name {
     opacity: 1;
     visibility: visible;
@@ -104,7 +101,6 @@ body {
     align-items: center;
     gap: 16px;
     padding: 12px 14px;
-    /* Centers the 20px SVG perfectly */
     border-radius: 10px;
     color: #94a3b8;
     text-decoration: none;
@@ -116,7 +112,6 @@ body {
     transition: background 0.2s, color 0.2s, padding 0.3s ease, gap 0.3s ease;
 }
 
-/* Reset padding for text space when expanded */
 .sidebar-modern:hover .nav-link {
     padding: 12px 16px;
     gap: 12px;
@@ -125,7 +120,6 @@ body {
 .nav-link svg {
     opacity: 0.7;
     flex-shrink: 0;
-    /* Ensures the icon doesn't resize */
     min-width: 20px;
 }
 
@@ -145,7 +139,6 @@ body {
     transition: opacity 0.2s ease, visibility 0s linear 0.2s;
 }
 
-/* Show nav text on hover */
 .sidebar-modern:hover .nav-link span {
     opacity: 1;
     visibility: visible;
@@ -156,24 +149,28 @@ body {
     color: #f87171;
 }
 
-/* --- Main Viewport --- */
+/* 2. Main Viewport strictly 100vh and non-scrolling */
 .main-viewport {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    height: 100vh;
+    overflow: hidden;
+    /* Scroll is handled by child now */
 }
 
+/* 3. Header strictly fixed to 80px via flex-shrink: 0 */
 .viewport-header {
     height: 80px;
+    min-height: 80px;
+    flex-shrink: 0;
     background: var(--white);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 40px;
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 10;
 }
 
@@ -201,9 +198,15 @@ body {
     font-weight: 600;
 }
 
+/* 4. Content gets flex: 1 and takes over scrolling internally. Padding reduced. */
 .viewport-content {
-    padding: 40px;
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    /* Reduced from 40px to feel more compact */
     max-width: 1200px;
     margin: 0 auto;
     width: 100%;
+    box-sizing: border-box;
+    /* Prevents padded widths from overflowing */
 }
