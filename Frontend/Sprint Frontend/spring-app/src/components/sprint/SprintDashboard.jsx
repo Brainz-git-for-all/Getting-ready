@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { sprintService, quickTaskService } from '../../api';
 import SprintForm from './SprintForm';
 import QuickTaskForm from './QuickTaskForm';
+import { customConfirm } from '../AlertSystem'; // <-- NEW
 
 const SprintDashboard = ({ userId }) => {
   const [sprints, setSprints] = useState([]);
   const [showSprintForm, setShowSprintForm] = useState(false);
   const [editingSprint, setEditingSprint] = useState(null);
   const [selectedSprintTasks, setSelectedSprintTasks] = useState(null);
-
   const [quickTasks, setQuickTasks] = useState([]);
   const [showQuickTaskForm, setShowQuickTaskForm] = useState(false);
 
@@ -21,24 +21,21 @@ const SprintDashboard = ({ userId }) => {
       ]);
       setSprints(sprintRes.data || []);
       setQuickTasks(qtRes.data || []);
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
-    }
+    } catch (error) { console.error("Error loading data:", error); }
   };
 
   useEffect(() => { fetchData(); }, [userId]);
 
   const handleDeleteSprint = async (id) => {
-    if (window.confirm("Are you sure you want to delete this sprint?")) {
+    const isConfirmed = await customConfirm("Delete Sprint", "Are you sure you want to delete this sprint? All tasks inside will be lost.", "Delete Sprint");
+    if (isConfirmed) {
       await sprintService.delete(id);
       fetchData();
     }
   };
 
   const handleEditSprint = (sprint) => {
-    setEditingSprint(sprint);
-    setShowQuickTaskForm(false);
-    setShowSprintForm(true);
+    setEditingSprint(sprint); setShowQuickTaskForm(false); setShowSprintForm(true);
   };
 
   const handleToggleTask = async (task) => {
@@ -56,7 +53,8 @@ const SprintDashboard = ({ userId }) => {
   };
 
   const handleDeleteQuickTask = async (id) => {
-    if (window.confirm("Delete this quick task?")) {
+    const isConfirmed = await customConfirm("Delete Task", "Are you sure you want to delete this quick task?", "Delete");
+    if (isConfirmed) {
       await quickTaskService.delete(id);
       fetchData();
     }
@@ -82,14 +80,7 @@ const SprintDashboard = ({ userId }) => {
         {!showSprintForm && !showQuickTaskForm && (
           <div className="table-wrapper">
             <table className="sprint-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Duration / Type</th>
-                  <th>Status / Tasks</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Name</th><th>Duration / Type</th><th>Status / Tasks</th><th>Actions</th></tr></thead>
               <tbody>
                 {sprints.length === 0 && quickTasks.length === 0 ? (
                   <tr><td colSpan="4" style={{ textAlign: 'center', color: '#6b7280' }}>No Sprints or Quick Tasks found.</td></tr>
@@ -104,11 +95,7 @@ const SprintDashboard = ({ userId }) => {
                           </div>
                         </td>
                         <td>{s.startDate} — {s.endDate}</td>
-                        <td>
-                          <span className="badge badge-blue" style={{ cursor: 'pointer' }} onClick={() => setSelectedSprintTasks(s)}>
-                            {s.tasks?.length || 0} Tasks View
-                          </span>
-                        </td>
+                        <td><span className="badge badge-blue" style={{ cursor: 'pointer' }} onClick={() => setSelectedSprintTasks(s)}>{s.tasks?.length || 0} Tasks View</span></td>
                         <td>
                           <button className="btn-edit" onClick={() => handleEditSprint(s)}>Edit</button>
                           <button className="btn-delete" onClick={() => handleDeleteSprint(s.id)}>Delete</button>
@@ -120,24 +107,17 @@ const SprintDashboard = ({ userId }) => {
                         <td>
                           <div className="icon-text-row" style={{ textDecoration: qt.completed ? 'line-through' : 'none', color: qt.completed ? '#9ca3af' : 'inherit' }}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                            <div>
-                              <strong>{qt.name}</strong>
-                              {qt.description && <div style={{ fontSize: '0.85em', color: '#6b7280', marginTop: '2px' }}>{qt.description}</div>}
-                            </div>
+                            <div><strong>{qt.name}</strong>{qt.description && <div style={{ fontSize: '0.85em', color: '#6b7280', marginTop: '2px' }}>{qt.description}</div>}</div>
                           </div>
                         </td>
                         <td><span className="badge badge-gray">Standalone</span></td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input type="checkbox" checked={qt.completed} onChange={() => handleToggleQuickTask(qt)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                            <span className={qt.completed ? "badge badge-green" : "badge badge-amber"}>
-                              {qt.completed ? 'Done' : 'Pending'}
-                            </span>
+                            <span className={qt.completed ? "badge badge-green" : "badge badge-amber"}>{qt.completed ? 'Done' : 'Pending'}</span>
                           </div>
                         </td>
-                        <td>
-                          <button className="btn-delete" onClick={() => handleDeleteQuickTask(qt.id)}>Delete</button>
-                        </td>
+                        <td><button className="btn-delete" onClick={() => handleDeleteQuickTask(qt.id)}>Delete</button></td>
                       </tr>
                     ))}
                   </>
@@ -155,7 +135,7 @@ const SprintDashboard = ({ userId }) => {
             <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
               {selectedSprintTasks.tasks?.length > 0 ? (
                 selectedSprintTasks.tasks.map((task, index) => (
-                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <input type="checkbox" checked={task.completed} onChange={() => handleToggleTask(task)} style={{ cursor: 'pointer' }} />
                       <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? '#9ca3af' : '#111' }}>{task.name}</span>
