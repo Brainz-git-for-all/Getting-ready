@@ -24,6 +24,8 @@ public class Habit {
     @Column(name = "user_id")
     private Long userId;
 
+
+
     @Column(name = "bad_habit")
     private Boolean badHabit = false; // Changed from boolean to Boolean to allow null assignment gracefully
 

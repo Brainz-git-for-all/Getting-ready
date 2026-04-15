@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import sprint.Pac.Activity.ActivityCategory;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "task")
@@ -24,6 +25,8 @@ public class Task {
     private String priority;
     private LocalDate startDate;
     private LocalDate endDate;
+
+    private LocalDateTime remindAt;
 
     // <--- NEW: Track if the task is finished
     private boolean completed = false;

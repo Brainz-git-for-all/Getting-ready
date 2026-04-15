@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import sprint.Pac.Activity.ActivityCategory;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "quick_tasks")
 @AllArgsConstructor
@@ -22,6 +24,9 @@ public class QuickTask {
     private String name;
 
     private String description;
+
+    private LocalDate startDate;
+    private LocalDate endDate;
 
     // NEW FIELD
     private String priority = "Medium";
