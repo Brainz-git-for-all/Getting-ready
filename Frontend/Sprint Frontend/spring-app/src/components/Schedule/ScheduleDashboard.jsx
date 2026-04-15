@@ -1,40 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { scheduleBlockService, habitService, sprintService } from '../../api';
+import { scheduleBlockService, habitService, sprintService, quickTaskService } from '../../api';
 import ScheduleBlockForm from './ScheduleBlockForm';
 import CategoryDashboard from './CategoryDashboard';
-import './Schedule.css';
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 
+// Helper for sorting priority (High priority tasks go to the top)
+const PRIORITY_SCORE = { 'High': 3, 'Medium': 2, 'Low': 1 };
+const getPriorityScore = (prio) => PRIORITY_SCORE[prio] || 0;
+
 const ScheduleDashboard = ({ userId }) => {
-    // Original Data Logic remains untouched
     const [blocks, setBlocks] = useState([]);
     const [habits, setHabits] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [view, setView] = useState('schedule');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalData, setModalData] = useState(null);
 
-    // NEW: UI State for the Zoom Slider (Default 14 hours visible)
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [formModalData, setFormModalData] = useState(null);
+    const [activeBlockId, setActiveBlockId] = useState(null);
     const [visibleHours, setVisibleHours] = useState(14);
 
     const fetchData = async () => {
         if (!userId || userId === 'null') return;
         try {
-            const [blocksRes, habitRes, sprintRes] = await Promise.all([
+            const [blocksRes, habitRes, sprintRes, qtRes] = await Promise.all([
                 scheduleBlockService.getByUserAndDay(userId, 'ALL'),
                 habitService.getAll(userId),
-                sprintService.getAllByUser(userId)
+                sprintService.getAllByUser(userId),
+                quickTaskService.getAllByUser(userId)
             ]);
-            setBlocks(blocksRes.data || []);
+
+            // THE FIX: We normalize the times instantly on fetch to remove seconds
+            const normalizedBlocks = (blocksRes.data || []).map(b => ({
+                ...b,
+                startTime: b.startTime.substring(0, 5),
+                endTime: b.endTime.substring(0, 5)
+            }));
+
+            setBlocks(normalizedBlocks);
             setHabits(habitRes.data || []);
-            setTasks((sprintRes.data || []).flatMap(s => s.tasks.map(t => ({ ...t, sprintId: s.id }))));
+
+            const sTasks = (sprintRes.data || []).flatMap(s => s.tasks.map(t => ({ ...t, sprintId: s.id, _isQuick: false })));
+            const qTasks = (qtRes.data || []).map(t => ({ ...t, _isQuick: true }));
+
+            setTasks([...sTasks, ...qTasks]);
         } catch (err) { console.error("Fetch error", err); }
     };
 
     useEffect(() => {
         fetchData();
-        const handleOpenModal = () => { setModalData(null); setIsModalOpen(true); };
+        const handleOpenModal = () => { setFormModalData(null); setIsFormModalOpen(true); };
         const handleToggleView = () => setView(prev => prev === 'schedule' ? 'categories' : 'schedule');
 
         window.addEventListener('open-block-modal', handleOpenModal);
@@ -45,7 +60,8 @@ const ScheduleDashboard = ({ userId }) => {
         };
     }, [userId]);
 
-    const timeToRow = (t) => {
+    const timeToRow = (t, isEnd = false) => {
+        if (isEnd && t === "23:59") return 49;
         const [h, m] = t.split(':').map(Number);
         return (h * 2) + (m >= 30 ? 1 : 0) + 1;
     };
@@ -55,55 +71,56 @@ const ScheduleDashboard = ({ userId }) => {
         const res = [];
         let last = "00:00";
         dayBlocks.forEach(b => {
-            if (b.startTime > last) res.push({ isTBA: true, startTime: last, endTime: b.startTime, day });
+            if (b.startTime > last) {
+                res.push({ isTBA: true, startTime: last, endTime: b.startTime, day });
+            }
             res.push({ ...b, isTBA: false });
             last = b.endTime;
         });
-        if (last < "23:59") res.push({ isTBA: true, startTime: last, endTime: "23:59", day });
+        if (last < "23:59") {
+            res.push({ isTBA: true, startTime: last, endTime: "23:59", day });
+        }
         return res;
     };
 
-    // DOM-based Optimistic UI Handlers
-    const handleLogClick = (e, h) => {
-        const btn = e.currentTarget;
-        btn.innerText = "Saved!";
-        btn.classList.add("btn-success");
-        habitService.saveTodaysLog(userId, new Date().toISOString().split('T')[0], [h.id])
-            .then(() => setTimeout(() => fetchData(), 1000));
+    const handleLogClick = async (h) => {
+        const today = new Date().toISOString().split('T')[0];
+        await habitService.saveTodaysLog(userId, today, [h.id]);
+        fetchData();
     };
 
-    const handleTaskToggle = (e, t) => {
-        const btn = e.currentTarget;
-        const span = btn.previousElementSibling;
-        const isCompleting = !span.classList.contains("done");
+    const handleTaskToggle = async (t) => {
+        const newStatus = !t.completed;
+        if (t._isQuick) await quickTaskService.update(t.id, { ...t, completed: newStatus });
+        else await sprintService.toggleTaskCompletion(t.sprintId, t.id, newStatus);
+        fetchData();
+    };
 
-        if (isCompleting) {
-            span.classList.add("done");
-            btn.innerText = "Undo";
-        } else {
-            span.classList.remove("done");
-            btn.innerText = "✓";
+    const handleDeleteBlock = async (id) => {
+        if (window.confirm("Remove this block from your schedule?")) {
+            await scheduleBlockService.delete(id);
+            setActiveBlockId(null);
+            fetchData();
         }
-        sprintService.toggleTaskCompletion(t.sprintId, t.id, isCompleting).then(() => fetchData());
     };
 
     if (view === 'categories') return <CategoryDashboard userId={userId} onBack={() => setView('schedule')} />;
 
-    return (
-        // Inline style passes the slider value dynamically to CSS variables!
-        <div className="viewport-container-schedule" style={{ '--visible-hours': visibleHours }}>
+    const activeBlock = blocks.find(b => b.id === activeBlockId);
+    let modalHabits = [];
+    let modalTasks = [];
+    if (activeBlock) {
+        modalHabits = habits.filter(h => h.category?.id === activeBlock.category?.id);
+        modalTasks = tasks.filter(t => t.category?.id === activeBlock.category?.id);
+        modalTasks.sort((a, b) => getPriorityScore(b.priority) - getPriorityScore(a.priority));
+    }
 
+    return (
+        <div className="viewport-container-schedule" style={{ '--visible-hours': visibleHours }}>
             <div className="schedule-toolbar">
-                <span className="toolbar-label">Scale:</span>
-                <input
-                    type="range"
-                    min="8"
-                    max="24"
-                    value={visibleHours}
-                    onChange={(e) => setVisibleHours(Number(e.target.value))}
-                    className="zoom-slider"
-                />
-                <span className="toolbar-value">{visibleHours}h View</span>
+                <span className="toolbar-label" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Scale:</span>
+                <input type="range" min="8" max="24" value={visibleHours} onChange={(e) => setVisibleHours(Number(e.target.value))} style={{ cursor: 'pointer' }} />
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)' }}>{visibleHours}h View</span>
             </div>
 
             <div className="timetable-main">
@@ -116,71 +133,34 @@ const ScheduleDashboard = ({ userId }) => {
                     <div className="grid-viewport">
                         <div className="time-column">
                             {Array.from({ length: 24 }).map((_, i) => (
-                                <div key={i} className="hour-cell">
-                                    {String(i).padStart(2, '0')}:00
-                                </div>
+                                <div key={i} className="hour-cell">{String(i).padStart(2, '0')}:00</div>
                             ))}
                         </div>
 
                         {DAYS.map(day => (
                             <div key={day} className="day-column">
                                 {getDayItems(day).map((item, idx) => {
-                                    const start = timeToRow(item.startTime);
-                                    const end = timeToRow(item.endTime);
+                                    const start = timeToRow(item.startTime, false);
+                                    const end = timeToRow(item.endTime, true);
 
                                     if (item.isTBA) {
-                                        return (
-                                            <div key={idx} className="tba-grid-cell"
-                                                style={{ gridRow: `${start} / ${end}` }}
-                                                onClick={() => { setModalData(item); setIsModalOpen(true); }}
-                                            />
-                                        );
+                                        return <div key={idx} className="tba-grid-cell" style={{ gridRow: `${start} / ${end}` }} onClick={() => { setFormModalData(item); setIsFormModalOpen(true); }} />;
                                     }
 
                                     const catHabits = habits.filter(h => h.category?.id === item.category?.id);
                                     const catTasks = tasks.filter(t => t.category?.id === item.category?.id);
-                                    const totalItems = catHabits.length + catTasks.length;
+                                    catTasks.sort((a, b) => getPriorityScore(b.priority) - getPriorityScore(a.priority));
 
                                     return (
-                                        <div key={item.id} className="block-grid-cell"
-                                            style={{ gridRow: `${start} / ${end}`, '--accent': item.category?.color || '#4f46e5' }}>
-
+                                        <div key={item.id} className="block-grid-cell" style={{ gridRow: `${start} / ${end}`, '--accent': item.category?.color || '#4f46e5' }}
+                                            onClick={() => setActiveBlockId(item.id)}>
                                             <div className="block-content">
                                                 <div className="block-cat">{item.category?.name}</div>
-                                                <div className="block-previews">
-                                                    {totalItems > 0 && totalItems <= 2 && (
-                                                        <>
-                                                            {catHabits.map(h => <div key={h.id} className="preview-text h-text">{h.name}</div>)}
-                                                            {catTasks.map(t => <div key={t.id} className="preview-text t-text">{t.name}</div>)}
-                                                        </>
-                                                    )}
-                                                    {totalItems >= 3 && (
-                                                        <>
-                                                            {catHabits.map(h => <div key={h.id} className="dot h" title={h.name}></div>)}
-                                                            {catTasks.map(t => <div key={t.id} className="dot t" title={t.name}></div>)}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="block-popover">
-                                                <div className="pop-header">
-                                                    <strong>{item.category?.name}</strong>
-                                                    <button className="pop-del" onClick={() => scheduleBlockService.delete(item.id).then(fetchData)}>×</button>
-                                                </div>
-                                                <div className="pop-body">
-                                                    {catHabits.map(h => (
-                                                        <div key={h.id} className="pop-row">
-                                                            <span>{h.name}</span>
-                                                            <button onClick={(e) => handleLogClick(e, h)}>Log</button>
-                                                        </div>
-                                                    ))}
+                                                <div className="block-items-detailed">
+                                                    {catHabits.map(h => <div key={`h-${h.id}`} className="sch-item sch-habit" title={h.name}>{h.name}</div>)}
                                                     {catTasks.map(t => (
-                                                        <div key={t.id} className="pop-row">
-                                                            <span className={t.completed ? 'done' : ''}>{t.name}</span>
-                                                            <button onClick={(e) => handleTaskToggle(e, t)}>
-                                                                {t.completed ? 'Undo' : '✓'}
-                                                            </button>
+                                                        <div key={`t-${t.id}`} className={`sch-item ${t._isQuick ? 'sch-qtask' : 'sch-task'}`} title={t.name}>
+                                                            {t._isQuick ? '⚡ ' : ''}{t.name}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -194,9 +174,66 @@ const ScheduleDashboard = ({ userId }) => {
                 </div>
             </div>
 
-            {isModalOpen && (
+            {isFormModalOpen && (
                 <div className="modal-overlay">
-                    <ScheduleBlockForm userId={userId} initialData={modalData} onClose={() => { setIsModalOpen(false); fetchData(); }} />
+                    <ScheduleBlockForm userId={userId} initialData={formModalData} onClose={() => { setIsFormModalOpen(false); fetchData(); }} />
+                </div>
+            )}
+
+            {activeBlock && (
+                <div className="modal-overlay" onClick={() => setActiveBlockId(null)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ color: activeBlock.category?.color, margin: 0 }}>{activeBlock.category?.name}</h3>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{activeBlock.startTime} - {activeBlock.endTime}</span>
+                        </div>
+
+                        {modalHabits.length > 0 && (
+                            <div style={{ marginTop: '20px' }}>
+                                <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '10px' }}>Daily Habits</h4>
+                                <div className="details-list">
+                                    {modalHabits.map(h => (
+                                        <div key={h.id} className="details-item">
+                                            <span style={{ color: '#065f46', fontWeight: 600 }}>{h.name}</span>
+                                            <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '12px', background: '#10b981' }} onClick={() => handleLogClick(h)}>Log Habit</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {modalTasks.length > 0 && (
+                            <div style={{ marginTop: '20px' }}>
+                                <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '10px' }}>Scheduled Tasks (Sorted by Priority)</h4>
+                                <div className="details-list">
+                                    {modalTasks.map(t => (
+                                        <div key={t.id} className={`details-item ${t.completed ? 'done' : ''}`}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ color: t._isQuick ? '#b45309' : '#3730a3', fontWeight: 'bold' }}>
+                                                    {t._isQuick ? '⚡ ' : '📋 '} {t.name}
+                                                </span>
+                                                <span className={t.priority === 'High' ? "badge badge-red" : t.priority === 'Low' ? "badge badge-green" : "badge badge-amber"}>
+                                                    {t.priority}
+                                                </span>
+                                            </div>
+                                            <button className={t.completed ? "btn-secondary" : "btn-primary"} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleTaskToggle(t)}>
+                                                {t.completed ? 'Undo' : 'Complete'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {modalHabits.length === 0 && modalTasks.length === 0 && (
+                            <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '30px 0' }}>Nothing scheduled for this category.</p>
+                        )}
+
+                        <div className="modal-actions" style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+                            <button className="btn-delete" style={{ marginRight: 'auto' }} onClick={() => handleDeleteBlock(activeBlock.id)}>Remove Block</button>
+                            <button className="btn-secondary" onClick={() => setActiveBlockId(null)}>Close</button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

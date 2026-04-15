@@ -9,23 +9,15 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-
-        // FIXED: Prevent infinite loops!
-        // If the 401 comes FROM the refresh or login endpoint, do NOT try to refresh again.
         if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
             return Promise.reject(error);
         }
-
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             try {
-                // Attempt to refresh the token
                 await api.post('/auth/refresh');
-
-                // If successful, retry the original request
                 return api(originalRequest);
             } catch (refreshError) {
-                // If the refresh fails (e.g., refresh token expired), clear local storage and force login
                 localStorage.clear();
                 window.location.href = '/';
                 return Promise.reject(refreshError);
@@ -34,8 +26,6 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
-// ... keep your authService, habitService, sprintService, etc. below exactly as they are ...
 
 export const authService = {
     login: (credentials) => api.post('/auth/login', credentials),
@@ -56,38 +46,17 @@ export const habitService = {
 export const sprintService = {
     getAllByUser: (userId) => api.get(`/sprints/user/${userId}`),
     create: (sprintData) => api.post('/sprints', sprintData),
-    update: (id, sprintData) => api.put(`/sprints/${id}`, sprintData), // <-- ADDED
+    update: (id, sprintData) => api.put(`/sprints/${id}`, sprintData),
     delete: (id) => api.delete(`/sprints/${id}`),
-    addTask: (sprintId, taskData) => api.post(`/sprints/${sprintId}/tasks`, taskData), // <-- ADDED
-    deleteTask: (sprintId, taskId) => api.delete(`/sprints/${sprintId}/tasks/${taskId}`), // <-- ADDED
+    addTask: (sprintId, taskData) => api.post(`/sprints/${sprintId}/tasks`, taskData),
+    deleteTask: (sprintId, taskId) => api.delete(`/sprints/${sprintId}/tasks/${taskId}`),
     toggleTaskCompletion: (sprintId, taskId, completed) =>
         api.patch(`/sprints/${sprintId}/tasks/${taskId}/complete?completed=${completed}`)
 };
 
-// ... existing authService, habitService, sprintService ...
-
-export const linkService = {
-    getAllByUser: (userId) => api.get(`/links/user/${userId}`),
-    create: (linkData) => api.post('/links', linkData),
-    update: (id, linkData) => api.put(`/links/${id}`, linkData),
-    delete: (id) => api.delete(`/links/${id}`),
-};
-
-// Add this alongside your existing services in api.js
-
-export const reminderService = {
-    getAllByUser: (userId) => api.get(`/users/${userId}/reminders`),
-    create: (userId, reminderData) => api.post(`/users/${userId}/reminders`, reminderData),
-    update: (userId, id, reminderData) => api.put(`/users/${userId}/reminders/${id}`, reminderData),
-    delete: (userId, id) => api.delete(`/users/${userId}/reminders/${id}`),
-};
-
 export const scheduleBlockService = {
-    // Logic to handle "ALL" or specific days
     getByUserAndDay: (userId, day) => {
-        if (day === 'ALL') {
-            return api.get(`/schedule-blocks/user/${userId}/all`);
-        }
+        if (day === 'ALL') return api.get(`/schedule-blocks/user/${userId}/all`);
         return api.get(`/schedule-blocks/user/${userId}/day/${day}`);
     },
     create: (blockData) => api.post('/schedule-blocks', blockData),
@@ -95,16 +64,27 @@ export const scheduleBlockService = {
     delete: (id) => api.delete(`/schedule-blocks/${id}`),
 };
 
-// Add this near your other services in api.js
-
-
 export const categoryService = {
-    // Fetch categories by specific user ID
     getAllByUser: (userId) => api.get(`/categories/user/${userId}`),
-
     create: (categoryData) => api.post('/categories', categoryData),
     update: (id, categoryData) => api.put(`/categories/${id}`, categoryData),
     delete: (id) => api.delete(`/categories/${id}`)
+};
+
+export const proxyService = {
+    getSites: (userId) => api.get(`/proxy/sites/${userId}`),
+    addSite: (siteData) => api.post(`/proxy/sites`, siteData),
+    deleteSite: (id) => api.delete(`/proxy/sites/${id}`),
+    startFocus: (userId) => api.post(`/proxy/start/${userId}`),
+    stopFocus: (userId) => api.post(`/proxy/stop/${userId}`),
+    getPacUrl: (userId) => `${api.defaults.baseURL}/proxy/pac/${userId}`
+};
+
+export const quickTaskService = {
+    getAllByUser: (userId) => api.get(`/quick-tasks/user/${userId}`),
+    create: (taskData) => api.post('/quick-tasks', taskData),
+    update: (id, taskData) => api.put(`/quick-tasks/${id}`, taskData),
+    delete: (id) => api.delete(`/quick-tasks/${id}`)
 };
 
 export default api;

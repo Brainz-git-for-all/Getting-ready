@@ -27,7 +27,7 @@ public class Task {
 
     // <--- NEW: Track if the task is finished
     private boolean completed = false;
-    private String scheduleforWhat;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference

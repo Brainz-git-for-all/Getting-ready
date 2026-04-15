@@ -9,11 +9,7 @@ const HabitForm = ({ userId, existingHabit, onClose }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        if (userId) {
-            categoryService.getAllByUser(userId)
-                .then(res => setCategories(res.data))
-                .catch(err => console.error("Failed to fetch categories", err));
-        }
+        if (userId) categoryService.getAllByUser(userId).then(res => setCategories(res.data));
     }, [userId]);
 
     useEffect(() => {
@@ -25,53 +21,39 @@ const HabitForm = ({ userId, existingHabit, onClose }) => {
     }, [existingHabit]);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
+        e.preventDefault(); setIsSubmitting(true);
         try {
-            const habitData = {
-                name,
-                userId: userId, // FIXED: Sent as flat Long to match Long userId in Java
-                badHabit: isBad,
-                category: categoryId ? { id: parseInt(categoryId) } : null
-            };
-
-            if (existingHabit) {
-                await habitService.update(existingHabit.id, habitData);
-            } else {
-                await habitService.create(habitData);
-            }
+            const habitData = { name, userId: userId, badHabit: isBad, category: categoryId ? { id: parseInt(categoryId) } : null };
+            if (existingHabit) { await habitService.update(existingHabit.id, habitData); }
+            else { await habitService.create(habitData); }
             onClose();
-        } catch (err) {
-            alert(`Failed to save habit.`);
-        } finally {
-            setIsSubmitting(false);
-        }
+        } catch (err) { alert(`Failed to save habit.`); }
+        finally { setIsSubmitting(false); }
     };
 
     return (
         <div className="form-card">
-            <header className="modal-header">
-                <h3>{existingHabit ? 'Edit Habit' : 'New Habit'}</h3>
-            </header>
+            <div className="form-header"><h2>{existingHabit ? 'Edit Habit' : 'New Habit'}</h2></div>
             <form onSubmit={handleSubmit}>
-                <div className="input-group">
-                    <label>Habit Name</label>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Read 10 pages" />
-                </div>
-                <div className="input-group">
-                    <label>Activity Category</label>
+                <div className="form-group"><label>Habit Name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Read 10 pages" /></div>
+
+                <div className="form-group"><label>Activity Category</label>
                     <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                         <option value="">-- Uncategorized --</option>
                         {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </select>
                 </div>
-                <div className="input-group" style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <input type="checkbox" checked={isBad} onChange={() => setIsBad(!isBad)} id="badHabitCheck" />
-                    <label htmlFor="badHabitCheck" style={{ marginBottom: 0 }}>Mark as "Bad Habit"</label>
+
+                <div className="form-group" style={{ marginTop: '20px' }}>
+                    <label htmlFor="badHabitCheck" className="bad-habit-label">
+                        <input type="checkbox" checked={isBad} onChange={() => setIsBad(!isBad)} id="badHabitCheck" className="bad-habit-checkbox" />
+                        Mark as "Bad Habit" (To Break)
+                    </label>
                 </div>
-                <div className="modal-footer">
+
+                <div className="modal-actions">
                     <button type="button" onClick={onClose} className="btn-cancel">Cancel</button>
-                    <button type="submit" disabled={isSubmitting} className="btn-save">{isSubmitting ? 'Saving...' : 'Save Habit'}</button>
+                    <button type="submit" disabled={isSubmitting} className="btn-submit">{isSubmitting ? 'Saving...' : 'Save Habit'}</button>
                 </div>
             </form>
         </div>

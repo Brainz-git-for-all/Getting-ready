@@ -2,34 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { habitService } from '../../api';
 import HabitForm from './HabitForm';
 import DailyLogForm from './DailyLogForm';
-import './Habits.css';
 
 const HabitDashboard = ({ userId }) => {
     const [habits, setHabits] = useState([]);
-    const [completedToday, setCompletedToday] = useState([]);
     const [view, setView] = useState('dashboard');
-    const [editingHabit, setEditingHabit] = useState(null); // Track the habit being edited
+    const [editingHabit, setEditingHabit] = useState(null);
     const today = new Date().toISOString().split('T')[0];
 
     const loadData = async () => {
         try {
             const habitsRes = await habitService.getAll(userId);
-            setHabits(habitsRes.data);
-
-            const logRes = await habitService.getTodaysLog(userId, today);
-            if (logRes.data && logRes.data.completedHabitIds) {
-                setCompletedToday(logRes.data.completedHabitIds);
-            }
-        } catch (err) {
-            console.error("Error fetching data", err);
-        }
+            setHabits(habitsRes.data || []);
+        } catch (err) { console.error("Error fetching data", err); }
     };
 
-    useEffect(() => {
-        if (userId && userId !== 'null') {
-            loadData();
-        }
-    }, [userId]);
+    useEffect(() => { if (userId && userId !== 'null') loadData(); }, [userId]);
 
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this habit?")) {
@@ -50,17 +37,12 @@ const HabitDashboard = ({ userId }) => {
     };
 
     return (
-        <div className="habit-container">
-            <header className="main-header">
-                <h1>Habit Dashboard</h1>
-                <p className="subtitle">Systematic progress tracking</p>
-            </header>
-
+        <div>
             {view === 'dashboard' && (
                 <>
-                    <div className="action-bar">
-                        <button className="btn-primary" onClick={() => setView('log')}>Log Progress</button>
-                        <button className="btn-secondary" onClick={() => { setEditingHabit(null); setView('add'); }}>+ New Habit</button>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                        <button className="btn-secondary" onClick={() => setView('log')}>Log Progress</button>
+                        <button className="btn-primary" onClick={() => { setEditingHabit(null); setView('add'); }}>+ New Habit</button>
                     </div>
 
                     <div className="table-wrapper">
@@ -73,25 +55,24 @@ const HabitDashboard = ({ userId }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {habits.map(habit => (
-                                    <tr key={habit.id}>
-                                        <td className="sprint-name">{habit.name}</td>
-                                        <td>
-                                            <span style={{
-                                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600',
-                                                backgroundColor: habit.badHabit ? '#fff1f0' : '#f6ffed',
-                                                color: habit.badHabit ? '#cf1322' : '#389e0d',
-                                                border: habit.badHabit ? '1px solid #ffa39e' : '1px solid #b7eb8f'
-                                            }}>
-                                                {habit.badHabit ? 'Bad Habit' : 'Good Habit'}
-                                            </span>
-                                        </td>
-                                        <td style={{ display: 'flex', gap: '8px' }}>
-                                            <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => handleEdit(habit)}>Edit</button>
-                                            <button className="btn-delete" style={{ padding: '6px 12px', fontSize: '0.85rem', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }} onClick={() => handleDelete(habit.id)}>Delete</button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {habits.length === 0 ? (
+                                    <tr><td colSpan="3" style={{ textAlign: 'center', color: '#6b7280' }}>No habits found.</td></tr>
+                                ) : (
+                                    habits.map(habit => (
+                                        <tr key={habit.id}>
+                                            <td style={{ fontWeight: 600 }}>{habit.name}</td>
+                                            <td>
+                                                <span className={habit.badHabit ? "badge badge-red" : "badge badge-green"}>
+                                                    {habit.badHabit ? 'Bad Habit' : 'Good Habit'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button className="btn-edit" onClick={() => handleEdit(habit)}>Edit</button>
+                                                <button className="btn-delete" onClick={() => handleDelete(habit.id)}>Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -104,4 +85,4 @@ const HabitDashboard = ({ userId }) => {
     );
 };
 
-export default HabitDashboard;
+export default HabitDashboard;  
