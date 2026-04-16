@@ -8,6 +8,7 @@ import lombok.Setter;
 import sprint.Pac.Activity.ActivityCategory;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "quick_tasks")
@@ -22,14 +23,14 @@ public class QuickTask {
     private Long id;
 
     private String name;
-
     private String description;
+    private String priority = "Medium";
 
     private LocalDate startDate;
     private LocalDate endDate;
 
-    // NEW FIELD
-    private String priority = "Medium";
+    // NEW: Custom Reminder Time
+    private LocalDateTime remindAt;
 
     @Column(name = "user_id")
     private Long userId;

@@ -22,7 +22,13 @@ public class ScheduleBlock {
     private LocalTime startTime;
     private LocalTime endTime;
 
-    // CHANGED: Use User entity instead of Long userId
+    // NEW: Schedule Reminder Logic
+    @Column(name = "remind_enabled")
+    private Boolean remindEnabled = false;
+
+    @Column(name = "remind_offset_minutes")
+    private Integer remindOffsetMinutes = 15;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
