@@ -4,19 +4,29 @@ import { proxyService } from '../../api';
 const NOTIFICATION_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 const PomodoroDashboard = ({ userId }) => {
+    const [mode, setMode] = useState('FOCUS'); // 'FOCUS' or 'BREAK'
     const [timeLeft, setTimeLeft] = useState(25 * 60);
+    const [totalTime, setTotalTime] = useState(25 * 60); // Used to calculate progress percentage
     const [isRunning, setIsRunning] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [blockedSites, setBlockedSites] = useState([]);
     const [newSite, setNewSite] = useState('');
     const audioRef = useRef(new Audio(NOTIFICATION_SOUND));
 
-    useEffect(() => { loadSites(); return () => { if (isRunning) proxyService.stopFocus(userId); }; }, []);
+    // Cleanup proxy on unmount
+    useEffect(() => {
+        loadSites();
+        return () => { proxyService.stopFocus(userId); };
+    }, [userId]);
 
+    // Timer countdown logic
     useEffect(() => {
         let interval = null;
-        if (isRunning && timeLeft > 0) { interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000); }
-        else if (isRunning && timeLeft === 0) { handleComplete(); }
+        if (isRunning && timeLeft > 0) {
+            interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+        } else if (isRunning && timeLeft === 0) {
+            handleComplete();
+        }
         return () => clearInterval(interval);
     }, [isRunning, timeLeft]);
 
@@ -28,15 +38,41 @@ const PomodoroDashboard = ({ userId }) => {
     };
 
     const toggleTimer = async () => {
-        if (!isRunning) { await proxyService.startFocus(userId); setIsRunning(true); }
-        else { await proxyService.stopFocus(userId); setIsRunning(false); }
+        if (!isRunning) {
+            if (mode === 'FOCUS') await proxyService.startFocus(userId);
+            setIsRunning(true);
+        } else {
+            if (mode === 'FOCUS') await proxyService.stopFocus(userId);
+            setIsRunning(false);
+        }
+    };
+
+    const triggerNotification = (title, body) => {
+        if (Notification.permission === "granted") {
+            new Notification(title, { body });
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") new Notification(title, { body });
+            });
+        }
     };
 
     const handleComplete = async () => {
-        setIsRunning(false); audioRef.current.play();
-        if (Notification.permission === "granted") { new Notification("Focus Time Complete!", { body: "Great job! Time for a break." }); }
-        else if (Notification.permission !== "denied") { Notification.requestPermission().then(permission => { if (permission === "granted") new Notification("Focus Time Complete!"); }); }
-        await proxyService.stopFocus(userId);
+        setIsRunning(false);
+        audioRef.current.play();
+
+        if (mode === 'FOCUS') {
+            triggerNotification("Focus Time Complete!", "Great job! Time for a 5-minute break.");
+            await proxyService.stopFocus(userId);
+            setMode('BREAK');
+            setTimeLeft(5 * 60);
+            setTotalTime(5 * 60);
+        } else {
+            triggerNotification("Break Complete!", "Ready to focus again?");
+            setMode('FOCUS');
+            setTimeLeft(25 * 60);
+            setTotalTime(25 * 60);
+        }
     };
 
     const addSite = async (e) => {
@@ -51,28 +87,82 @@ const PomodoroDashboard = ({ userId }) => {
         return `${m}:${s}`;
     };
 
-    const adjustTime = (amountInMinutes) => { if (!isRunning) setTimeLeft(prev => Math.max(60, prev + (amountInMinutes * 60))); };
+    // Adjust time dynamically
+    const adjustTime = (amountInMinutes) => {
+        if (isRunning && amountInMinutes < 0) return;
+        const amountInSeconds = amountInMinutes * 60;
+
+        setTimeLeft(prev => {
+            const newTime = Math.max(60, prev + amountInSeconds);
+            // Keep totalTime in sync so the progress ring doesn't jump out of bounds
+            setTotalTime(t => Math.max(60, t + amountInSeconds));
+            return newTime;
+        });
+    };
+
+    // --- SVG Progress Circle Math ---
+    const circleRadius = 135; // Size of the ring
+    const circleCircumference = 2 * Math.PI * circleRadius;
+    const progressPercentage = timeLeft / totalTime;
+    const strokeDashoffset = circleCircumference - (progressPercentage * circleCircumference);
 
     return (
         <div className="pomo-container">
             <div className="pomo-header">
-                <h2>Pomodoro Focus</h2>
+                <h2>{mode === 'FOCUS' ? 'Pomodoro Focus' : 'Break Time'}</h2>
                 <button className="settings-btn" onClick={() => setShowSettings(true)}>
                     <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
                 </button>
             </div>
 
             <div className="timer-wrapper">
-                <div className="timer-circle">
-                    {!isRunning && <button className="time-adjust minus" onClick={() => adjustTime(-5)}>-</button>}
-                    <div className="time-display">{formatTime(timeLeft)}</div>
-                    {!isRunning && <button className="time-adjust plus" onClick={() => adjustTime(5)}>+</button>}
+
+                {/* SVG Animated Progress Ring */}
+                <div className="timer-circle" style={{ border: 'none', position: 'relative' }}>
+
+                    <svg width="300" height="300" style={{ position: 'absolute', transform: 'rotate(-90deg)', top: 0, left: 0 }}>
+                        {/* Background track */}
+                        <circle
+                            cx="150" cy="150" r={circleRadius}
+                            stroke="#e2e8f0" strokeWidth="10" fill="none"
+                        />
+                        {/* Colored moving progress track */}
+                        <circle
+                            cx="150" cy="150" r={circleRadius}
+                            stroke={mode === 'FOCUS' ? 'var(--primary)' : 'var(--success)'}
+                            strokeWidth="10"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={circleCircumference}
+                            strokeDashoffset={strokeDashoffset}
+                            style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.5s ease' }}
+                        />
+                    </svg>
+
+                    {/* Timer Controls (Z-index ensures they are clickable above the SVG) */}
+                    <div style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                        {!isRunning && (
+                            <button className="time-adjust minus" style={{ position: 'absolute', left: '30px' }} onClick={() => adjustTime(-5)}>-</button>
+                        )}
+
+                        <div className="time-display" style={{ color: mode === 'BREAK' ? 'var(--success)' : 'var(--primary-dark)' }}>
+                            {formatTime(timeLeft)}
+                        </div>
+
+                        <button className="time-adjust plus" style={{ position: 'absolute', right: '30px' }} onClick={() => adjustTime(5)}>+</button>
+                    </div>
                 </div>
-                <button className={`control-btn ${isRunning ? 'paused' : 'started'}`} onClick={toggleTimer}>
+
+                <button
+                    className={`control-btn ${isRunning ? 'paused' : 'started'}`}
+                    onClick={toggleTimer}
+                    style={mode === 'BREAK' && !isRunning ? { backgroundColor: 'var(--success)' } : {}}
+                >
                     {isRunning ? 'Pause' : 'Start'}
                 </button>
             </div>
 
+            {/* --- Settings Modal --- */}
             {showSettings && (
                 <div className="modal-overlay">
                     <div className="modal-content">

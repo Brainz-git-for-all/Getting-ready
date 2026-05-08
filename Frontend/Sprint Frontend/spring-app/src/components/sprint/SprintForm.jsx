@@ -1,71 +1,156 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { sprintService, categoryService } from '../../api';
 
-const SprintForm = ({ onSprintCreated, initialData, userId }) => {
-    const [sprint, setSprint] = useState({ name: '', startDate: '', endDate: '', tasks: [] });
-    const [categories, setCategories] = useState([]);
-    const [showTaskModal, setShowTaskModal] = useState(false);
+// Helper to format dates for the backend (YYYY-MM-DD)
+const formatDate = (date) => date ? date.toISOString().split('T')[0] : '';
 
-    // Task States
-    const [newTask, setNewTask] = useState({
-        name: '', priority: 'Medium', categoryId: '',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0]
-    });
+const SprintForm = ({ onSprintCreated, initialData, userId }) => {
+    const [sprintName, setSprintName] = useState('');
+    const [sprintDateRange, setSprintDateRange] = useState([null, null]);
+    const [sprintStartDate, sprintEndDate] = sprintDateRange;
+    const [tasks, setTasks] = useState([]);
+
+    const [categoryOptions, setCategoryOptions] = useState([]);
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+
+    // New Task States
+    const [newTaskName, setNewTaskName] = useState('');
+    const [newTaskPriority, setNewTaskPriority] = useState({ value: 'Medium', label: 'Medium' });
+    const [newTaskCategory, setNewTaskCategory] = useState(null);
+    const [newTaskDateRange, setNewTaskDateRange] = useState([null, null]);
+
+    const priorityOptions = [
+        { value: 'High', label: 'High' },
+        { value: 'Medium', label: 'Medium' },
+        { value: 'Low', label: 'Low' }
+    ];
 
     useEffect(() => {
-        if (userId) categoryService.getAllByUser(userId).then(res => setCategories(res.data || []));
-        if (initialData) setSprint(initialData);
+        if (userId) {
+            categoryService.getAllByUser(userId).then(res => {
+                setCategoryOptions((res.data || []).map(c => ({ value: c.id, label: c.name })));
+            });
+        }
+        if (initialData) {
+            setSprintName(initialData.name);
+            setSprintDateRange([new Date(initialData.startDate), new Date(initialData.endDate)]);
+            setTasks(initialData.tasks || []);
+        }
     }, [userId, initialData]);
 
+    // Validation to prevent tasks from exceeding sprint dates (OPTION B)
+    const checkTaskBounds = (tStartDate, tEndDate) => {
+        if (!sprintStartDate || !sprintEndDate) return true;
+        const tStart = new Date(tStartDate).setHours(0, 0, 0, 0);
+        const tEnd = new Date(tEndDate).setHours(0, 0, 0, 0);
+        const sStart = sprintStartDate.setHours(0, 0, 0, 0);
+        const sEnd = sprintEndDate.setHours(0, 0, 0, 0);
+        return (tStart >= sStart && tEnd <= sEnd);
+    };
+
     const handleAddTask = (e) => {
-        e.preventDefault(); if (!newTask.name.trim()) return;
-        const taskToAdd = { ...newTask, category: newTask.categoryId ? { id: parseInt(newTask.categoryId) } : null };
-        setSprint({ ...sprint, tasks: [...sprint.tasks, taskToAdd] });
-        setNewTask({ name: '', priority: 'Medium', categoryId: '', startDate: sprint.startDate || '', endDate: sprint.endDate || '' });
+        e.preventDefault();
+        if (!newTaskName.trim() || !newTaskDateRange[0] || !newTaskDateRange[1]) return;
+
+        if (!checkTaskBounds(newTaskDateRange[0], newTaskDateRange[1])) {
+            alert("Error: Task dates must be within the Sprint start and end dates.");
+            return;
+        }
+
+        const taskToAdd = {
+            name: newTaskName,
+            priority: newTaskPriority.value,
+            startDate: formatDate(newTaskDateRange[0]),
+            endDate: formatDate(newTaskDateRange[1]),
+            category: newTaskCategory ? { id: parseInt(newTaskCategory.value) } : null,
+            categoryName: newTaskCategory ? newTaskCategory.label : 'Uncategorized'
+        };
+
+        setTasks([...tasks, taskToAdd]);
+        setNewTaskName('');
+        setNewTaskCategory(null);
+        setNewTaskDateRange([sprintStartDate, sprintEndDate]);
         setShowTaskModal(false);
     };
 
     const handleRemoveTask = (indexToRemove) => {
-        setSprint({ ...sprint, tasks: sprint.tasks.filter((_, idx) => idx !== indexToRemove) });
+        setTasks(tasks.filter((_, idx) => idx !== indexToRemove));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMsg('');
+
+        if (!sprintStartDate || !sprintEndDate) {
+            setErrorMsg("Please select a valid date range for the Sprint.");
+            return;
+        }
+
+        const invalidTasks = tasks.filter(t => !checkTaskBounds(t.startDate, t.endDate));
+        if (invalidTasks.length > 0) {
+            setErrorMsg(`Cannot save: ${invalidTasks.length} task(s) have dates outside the current Sprint boundaries. Please fix them before saving.`);
+            return;
+        }
+
         try {
-            const payload = { ...sprint, userId: userId };
+            const payload = {
+                name: sprintName,
+                startDate: formatDate(sprintStartDate),
+                endDate: formatDate(sprintEndDate),
+                tasks,
+                userId
+            };
             if (initialData?.id) await sprintService.update(initialData.id, payload);
             else await sprintService.create(payload);
             onSprintCreated();
-        } catch (error) { alert("Save failed."); }
+        } catch (error) { setErrorMsg("Failed to save Sprint. Please try again."); }
     };
 
     return (
         <div className="form-card">
             <h2>{initialData ? 'Edit Sprint' : 'Create New Sprint'}</h2>
+            {errorMsg && <div className="error-banner">{errorMsg}</div>}
             <form onSubmit={handleSubmit}>
-                <div className="form-group"><label>Sprint Name</label><input type="text" value={sprint.name} onChange={e => setSprint({ ...sprint, name: e.target.value })} required /></div>
-                <div style={{ display: 'flex', gap: '15px' }}>
-                    <div className="form-group" style={{ flex: 1 }}><label>Start Date</label><input type="date" value={sprint.startDate} onChange={e => setSprint({ ...sprint, startDate: e.target.value })} required /></div>
-                    <div className="form-group" style={{ flex: 1 }}><label>End Date</label><input type="date" value={sprint.endDate} onChange={e => setSprint({ ...sprint, endDate: e.target.value })} required /></div>
+                <div className="form-group">
+                    <label>Sprint Name</label>
+                    <input type="text" placeholder="e.g., Q1 Refactoring Sprint" value={sprintName} onChange={e => setSprintName(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                    <label>Sprint Duration (Drag to select range)</label>
+                    <DatePicker
+                        selectsRange={true}
+                        startDate={sprintStartDate}
+                        endDate={sprintEndDate}
+                        onChange={(update) => setSprintDateRange(update)}
+                        isClearable={true}
+                        placeholderText="Select Start Date → End Date"
+                        className="date-picker-input"
+                        required
+                    />
                 </div>
 
                 <div style={{ margin: '20px 0', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <label style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '13px' }}>Sprint Tasks</label>
+                        <label style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Sprint Tasks</label>
                         <button type="button" className="btn-secondary" onClick={() => setShowTaskModal(true)}>+ Add Task</button>
                     </div>
 
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {sprint.tasks.map((t, idx) => (
-                            <li key={idx} style={{ padding: '10px', background: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: '6px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <ul className="task-list">
+                        {tasks.map((t, idx) => (
+                            <li key={idx} className="task-item">
                                 <div>
-                                    <span style={{ fontWeight: 600, fontSize: '14px', display: 'block' }}>{t.name}</span>
-                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.startDate} to {t.endDate}</span>
+                                    <span className="task-name">{t.name}</span>
+                                    <span className="task-meta">{t.startDate} to {t.endDate} • {t.categoryName || 'Uncategorized'}</span>
                                 </div>
-                                <button type="button" className="pop-del" onClick={() => handleRemoveTask(idx)}>×</button>
+                                <button type="button" className="btn-delete" onClick={() => handleRemoveTask(idx)}>Remove</button>
                             </li>
                         ))}
+                        {tasks.length === 0 && <p className="empty-tasks">No tasks added yet.</p>}
                     </ul>
                 </div>
                 <button type="submit" className="btn-submit" style={{ width: '100%', marginTop: '10px' }}>Save Sprint</button>
@@ -75,24 +160,48 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <div className="modal-header"><h3>Add Task to Sprint</h3></div>
-                        <div className="form-group"><label>Task Name</label><input type="text" value={newTask.name} onChange={e => setNewTask({ ...newTask, name: e.target.value })} /></div>
+                        <div className="form-group">
+                            <label>Task Name</label>
+                            <input type="text" placeholder="e.g., Build Login API" value={newTaskName} onChange={e => setNewTaskName(e.target.value)} />
+                        </div>
 
-                        <div style={{ display: 'flex', gap: '15px' }}>
-                            <div className="form-group" style={{ flex: 1 }}><label>Start Date</label><input type="date" value={newTask.startDate} onChange={e => setNewTask({ ...newTask, startDate: e.target.value })} /></div>
-                            <div className="form-group" style={{ flex: 1 }}><label>End Date</label><input type="date" value={newTask.endDate} onChange={e => setNewTask({ ...newTask, endDate: e.target.value })} /></div>
+                        <div className="form-group">
+                            <label>Task Dates (Must be within Sprint)</label>
+                            <DatePicker
+                                selectsRange={true}
+                                startDate={newTaskDateRange[0]}
+                                endDate={newTaskDateRange[1]}
+                                onChange={(update) => setNewTaskDateRange(update)}
+                                isClearable={true}
+                                placeholderText="Select Task Duration..."
+                                className="date-picker-input"
+                            />
                         </div>
 
                         <div style={{ display: 'flex', gap: '15px' }}>
-                            <div className="form-group" style={{ flex: 1 }}><label>Category</label>
-                                <select value={newTask.categoryId} onChange={e => setNewTask({ ...newTask, categoryId: e.target.value })}>
-                                    <option value="">-- No Category --</option>
-                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                            <div className="form-group" style={{ flex: 1 }}>
+                                <label>Category</label>
+                                <Select
+                                    value={newTaskCategory}
+                                    onChange={setNewTaskCategory}
+                                    options={categoryOptions}
+                                    placeholder="Select category..."
+                                    classNamePrefix="react-select"
+                                    isClearable
+                                    menuPortalTarget={document.body}
+                                    styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }}
+                                />
                             </div>
-                            <div className="form-group" style={{ flex: 1 }}><label>Priority</label>
-                                <select value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value })}>
-                                    <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
-                                </select>
+                            <div className="form-group" style={{ flex: 1 }}>
+                                <label>Priority</label>
+                                <Select
+                                    value={newTaskPriority}
+                                    onChange={setNewTaskPriority}
+                                    options={priorityOptions}
+                                    classNamePrefix="react-select"
+                                    menuPortalTarget={document.body}
+                                    styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }}
+                                />
                             </div>
                         </div>
 
