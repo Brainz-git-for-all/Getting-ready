@@ -24,7 +24,25 @@ public class ScheduleBlockController {
         }
     }
 
-    // NEW ENDPOINT: Handles the "ALL" request from the Dashboard
+    // NEW BULK ENDPOINT: For Multiple Days
+    @PostMapping("/bulk")
+    public ResponseEntity<?> createBulkBlocks(@RequestBody List<ScheduleBlock> newBlocks) {
+        try {
+            return new ResponseEntity<>(scheduleBlockService.createBulkScheduleBlocks(newBlocks), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateBlock(@PathVariable Long id, @RequestBody ScheduleBlock updatedBlock) {
+        try {
+            return new ResponseEntity<>(scheduleBlockService.updateScheduleBlock(id, updatedBlock), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @GetMapping("/user/{userId}/all")
     public ResponseEntity<List<ScheduleBlock>> getAllBlocksByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(scheduleBlockService.getAllBlocksByUser(userId));

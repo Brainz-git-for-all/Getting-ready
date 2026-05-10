@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { scheduleBlockService, categoryService } from '../../api';
+import { customAlert } from '../AlertSystem';
+
+const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 
 const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
     const [categoryOptions, setCategoryOptions] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
-    const dayOptions = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].map(d => ({ value: d, label: d }));
-    const [selectedDay, setSelectedDay] = useState(dayOptions.find(d => d.value === (initialData?.day || 'MONDAY')));
+
+    // State is now an Array of selected days
+    const [selectedDays, setSelectedDays] = useState(initialData ? [initialData.day] : ['MONDAY']);
 
     const [formData, setFormData] = useState({
         startTime: initialData?.startTime?.substring(0, 5) || '09:00',
@@ -25,23 +29,52 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
         });
     }, [userId, initialData]);
 
+    const toggleDay = (day) => {
+        if (initialData) return; // Prevent multi-select when editing an existing block
+
+        if (selectedDays.includes(day)) {
+            if (selectedDays.length > 1) setSelectedDays(selectedDays.filter(d => d !== day));
+        } else {
+            setSelectedDays([...selectedDays, day]);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedCategory) return alert("Please select a category.");
+        if (!selectedCategory) return customAlert("Missing Input", "Please select a category.");
+        if (formData.startTime === formData.endTime) return customAlert("Invalid Time", "Start and End times cannot be exactly the same.");
+
         try {
-            const payload = {
-                day: selectedDay.value,
-                startTime: `${formData.startTime}:00`,
-                endTime: `${formData.endTime}:00`,
-                remindEnabled: formData.remindEnabled,
-                remindOffsetMinutes: formData.remindOffsetMinutes,
-                user: { id: userId },
-                category: { id: parseInt(selectedCategory.value) }
-            };
-            if (initialData?.id) await scheduleBlockService.update(initialData.id, payload);
-            else await scheduleBlockService.create(payload);
+            if (initialData?.id) {
+                // Editing exactly 1 block
+                const payload = {
+                    day: selectedDays[0],
+                    startTime: `${formData.startTime}:00`,
+                    endTime: `${formData.endTime}:00`,
+                    remindEnabled: formData.remindEnabled,
+                    remindOffsetMinutes: formData.remindOffsetMinutes,
+                    user: { id: userId },
+                    category: { id: parseInt(selectedCategory.value) }
+                };
+                await scheduleBlockService.update(initialData.id, payload);
+            } else {
+                // Creating multiple days at once
+                const payloads = selectedDays.map(d => ({
+                    day: d,
+                    startTime: `${formData.startTime}:00`,
+                    endTime: `${formData.endTime}:00`,
+                    remindEnabled: formData.remindEnabled,
+                    remindOffsetMinutes: formData.remindOffsetMinutes,
+                    user: { id: userId },
+                    category: { id: parseInt(selectedCategory.value) }
+                }));
+                await scheduleBlockService.createBulk(payloads);
+            }
             onClose();
-        } catch (err) { alert("Failed to save block."); }
+        } catch (err) {
+            const errorMsg = err.response?.data || "Failed to save schedule. Unknown overlap error.";
+            customAlert("Schedule Conflict", errorMsg);
+        }
     };
 
     return (
@@ -49,17 +82,28 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
             <div className="modal-header"><h3>{initialData ? 'Edit Block' : 'New Schedule Block'}</h3></div>
             <form onSubmit={handleSubmit}>
 
-                {/* DAY OF WEEK - MOVED TO TOP */}
+                {/* MULTI-DAY ROW UI */}
                 <div className="form-group">
-                    <label>Day of Week</label>
-                    <Select
-                        value={selectedDay}
-                        onChange={setSelectedDay}
-                        options={dayOptions}
-                        classNamePrefix="react-select"
-                        menuPortalTarget={document.body}
-                        styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }}
-                    />
+                    <label>Select Days {initialData && <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '5px' }}>(Edit locked to single day)</span>}</label>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', marginTop: '5px' }}>
+                        {DAYS.map(d => (
+                            <div
+                                key={d}
+                                onClick={() => toggleDay(d)}
+                                style={{
+                                    width: '35px', height: '35px', borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 'bold', fontSize: '12px', cursor: initialData ? 'not-allowed' : 'pointer',
+                                    transition: '0.2s',
+                                    background: selectedDays.includes(d) ? 'var(--primary)' : 'var(--bg-secondary)',
+                                    color: selectedDays.includes(d) ? 'white' : 'var(--text-muted)',
+                                    border: `1px solid ${selectedDays.includes(d) ? 'var(--primary)' : 'var(--border)'}`
+                                }}
+                            >
+                                {d.substring(0, 1)}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="form-group">
@@ -70,9 +114,7 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
                         options={categoryOptions}
                         placeholder="Search categories..."
                         classNamePrefix="react-select"
-                        isClearable
-                        required
-                        menuPortalTarget={document.body}
+                        isClearable required menuPortalTarget={document.body}
                         styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }}
                     />
                 </div>
@@ -101,7 +143,7 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
                     )}
                 </div>
 
-                <div className="modal-actions">
+                <div className="modal-actions" style={{ marginTop: '20px' }}>
                     <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
                     <button type="submit" className="btn-submit">Save Block</button>
                 </div>

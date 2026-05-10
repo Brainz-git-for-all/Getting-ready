@@ -62,8 +62,11 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allowed origins for React/Vite
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // 🟢 FIX: Allow BOTH localhost and your local network IP address
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://192.168.65.38:5173"
+        ));
 
         // ADDED "PATCH" TO THIS LIST 👇
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

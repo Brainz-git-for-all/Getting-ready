@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { scheduleBlockService, habitService, sprintService, quickTaskService } from '../../api';
 import ScheduleBlockForm from './ScheduleBlockForm';
 import CategoryDashboard from './CategoryDashboard';
-import { customConfirm } from '../AlertSystem'; // <-- NEW
+import { customConfirm } from '../AlertSystem';
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const PRIORITY_SCORE = { 'High': 3, 'Medium': 2, 'Low': 1 };
@@ -53,11 +53,31 @@ const ScheduleDashboard = ({ userId }) => {
     };
 
     const getDayItems = (day) => {
-        const dayBlocks = blocks.filter(b => b.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
+        // 1. Normal blocks that start and end on this day
+        const normalBlocks = blocks.filter(b => b.day === day && b.startTime < b.endTime);
+
+        // 2. Overnight block logic (Start Time is greater than End Time)
+        const startsTonight = blocks.filter(b => b.day === day && b.startTime > b.endTime);
+
+        // Check if yesterday had an overnight block that spills into TODAY morning
+        const prevDay = DAYS[(DAYS.indexOf(day) + 6) % 7];
+        const endedFromYesterday = blocks.filter(b => b.day === prevDay && b.startTime > b.endTime);
+
+        // Merge them into visual parts
+        const displayItems = [
+            ...normalBlocks,
+            // Part 1: Tonight until midnight
+            ...startsTonight.map(b => ({ ...b, endTime: "23:59", _isOvernightPart: true, originalId: b.id })),
+            // Part 2: Yesterday's spill over until Morning
+            ...endedFromYesterday.map(b => ({ ...b, day: day, startTime: "00:00", _isOvernightPart: true, originalId: b.id }))
+        ].sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        // Calculate TBA (To Be Announced / Empty slots)
         const res = []; let last = "00:00";
-        dayBlocks.forEach(b => {
+        displayItems.forEach(b => {
             if (b.startTime > last) { res.push({ isTBA: true, startTime: last, endTime: b.startTime, day }); }
-            res.push({ ...b, isTBA: false }); last = b.endTime;
+            res.push({ ...b, isTBA: false });
+            last = b.endTime > last ? b.endTime : last; // Advance time marker
         });
         if (last < "23:59") { res.push({ isTBA: true, startTime: last, endTime: "23:59", day }); }
         return res;
@@ -105,14 +125,19 @@ const ScheduleDashboard = ({ userId }) => {
                             <div key={day} className="day-column">
                                 {getDayItems(day).map((item, idx) => {
                                     const start = timeToRow(item.startTime, false); const end = timeToRow(item.endTime, true);
-                                    if (item.isTBA) return <div key={idx} className="tba-grid-cell" style={{ gridRow: `${start} / ${end}` }} onClick={() => { setFormModalData(item); setIsFormModalOpen(true); }} />;
+                                    if (item.isTBA) return <div key={`tba-${idx}`} className="tba-grid-cell" style={{ gridRow: `${start} / ${end}` }} onClick={() => { setFormModalData({ ...item, startTime: item.startTime, endTime: item.endTime, day: item.day }); setIsFormModalOpen(true); }} />;
 
                                     const catHabits = habits.filter(h => h.category?.id === item.category?.id);
                                     const catTasks = tasks.filter(t => t.category?.id === item.category?.id);
                                     catTasks.sort((a, b) => getPriorityScore(b.priority) - getPriorityScore(a.priority));
 
                                     return (
-                                        <div key={item.id} className="block-grid-cell" style={{ gridRow: `${start} / ${end}`, '--accent': item.category?.color || '#4f46e5' }} onClick={() => setActiveBlockId(item.id)}>
+                                        <div
+                                            key={`${item.id}-${item.startTime}`}
+                                            className="block-grid-cell"
+                                            style={{ gridRow: `${start} / ${end}`, '--accent': item.category?.color || '#4f46e5' }}
+                                            onClick={() => setActiveBlockId(item.originalId || item.id)}
+                                        >
                                             <div className="block-content">
                                                 <div className="block-cat">{item.category?.name}</div>
                                                 <div className="block-items-detailed">
@@ -136,7 +161,7 @@ const ScheduleDashboard = ({ userId }) => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ color: activeBlock.category?.color, margin: 0 }}>{activeBlock.category?.name}</h3>
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{activeBlock.startTime} - {activeBlock.endTime}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>{activeBlock.startTime} - {activeBlock.endTime} ({activeBlock.day.substring(0, 3)})</span>
                         </div>
                         {modalHabits.length > 0 && (
                             <div style={{ marginTop: '20px' }}>
@@ -169,7 +194,8 @@ const ScheduleDashboard = ({ userId }) => {
                         )}
                         {modalHabits.length === 0 && modalTasks.length === 0 && <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '30px 0' }}>Nothing scheduled for this category.</p>}
                         <div className="modal-actions" style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                            <button className="btn-delete" style={{ marginRight: 'auto' }} onClick={() => handleDeleteBlock(activeBlock.id)}>Remove Block</button>
+                            <button className="btn-secondary" style={{ marginRight: '10px' }} onClick={() => { setActiveBlockId(null); setFormModalData(activeBlock); setIsFormModalOpen(true); }}>Edit</button>
+                            <button className="btn-delete" style={{ marginRight: 'auto' }} onClick={() => handleDeleteBlock(activeBlock.id)}>Remove</button>
                             <button className="btn-secondary" onClick={() => setActiveBlockId(null)}>Close</button>
                         </div>
                     </div>

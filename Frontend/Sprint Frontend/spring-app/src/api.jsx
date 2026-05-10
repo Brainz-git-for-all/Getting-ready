@@ -60,6 +60,7 @@ export const scheduleBlockService = {
         return api.get(`/schedule-blocks/user/${userId}/day/${day}`);
     },
     create: (blockData) => api.post('/schedule-blocks', blockData),
+    createBulk: (dataArray) => api.post('/schedule-blocks/bulk', dataArray), // NEW: For multiple days!
     update: (id, blockData) => api.put(`/schedule-blocks/${id}`, blockData),
     delete: (id) => api.delete(`/schedule-blocks/${id}`),
 };
