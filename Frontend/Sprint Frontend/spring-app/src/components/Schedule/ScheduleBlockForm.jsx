@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { scheduleBlockService, categoryService } from '../../api';
 import { customAlert } from '../AlertSystem';
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+// Pool of nice colors for auto-generated categories
+const COLORS = ['#4f46e5', '#059669', '#e11d48', '#d97706', '#7c3aed', '#0891b2', '#c026d3', '#2563eb'];
 
 const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
     const [categoryOptions, setCategoryOptions] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
-    // State is now an Array of selected days
     const [selectedDays, setSelectedDays] = useState(initialData ? [initialData.day] : ['MONDAY']);
 
     const [formData, setFormData] = useState({
@@ -30,8 +32,7 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
     }, [userId, initialData]);
 
     const toggleDay = (day) => {
-        if (initialData) return; // Prevent multi-select when editing an existing block
-
+        if (initialData) return;
         if (selectedDays.includes(day)) {
             if (selectedDays.length > 1) setSelectedDays(selectedDays.filter(d => d !== day));
         } else {
@@ -39,41 +40,47 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
         }
     };
 
+    const handleCreateCategory = async (inputValue) => {
+        setIsCreatingCategory(true);
+        try {
+            // Give it a random nice color automatically
+            const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            const res = await categoryService.create({ name: inputValue, color: randomColor, userId });
+
+            const newOption = { value: res.data.id, label: res.data.name };
+            setCategoryOptions((prev) => [...prev, newOption]);
+            setSelectedCategory(newOption);
+        } catch (err) {
+            customAlert("Error", "Failed to create category automatically.");
+        } finally {
+            setIsCreatingCategory(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedCategory) return customAlert("Missing Input", "Please select a category.");
+        if (!selectedCategory) return customAlert("Missing Input", "Please select or type an Activity Name.");
         if (formData.startTime === formData.endTime) return customAlert("Invalid Time", "Start and End times cannot be exactly the same.");
 
         try {
             if (initialData?.id) {
-                // Editing exactly 1 block
                 const payload = {
-                    day: selectedDays[0],
-                    startTime: `${formData.startTime}:00`,
-                    endTime: `${formData.endTime}:00`,
-                    remindEnabled: formData.remindEnabled,
-                    remindOffsetMinutes: formData.remindOffsetMinutes,
-                    user: { id: userId },
-                    category: { id: parseInt(selectedCategory.value) }
+                    day: selectedDays[0], startTime: `${formData.startTime}:00`, endTime: `${formData.endTime}:00`,
+                    remindEnabled: formData.remindEnabled, remindOffsetMinutes: formData.remindOffsetMinutes,
+                    user: { id: userId }, category: { id: parseInt(selectedCategory.value) }
                 };
                 await scheduleBlockService.update(initialData.id, payload);
             } else {
-                // Creating multiple days at once
                 const payloads = selectedDays.map(d => ({
-                    day: d,
-                    startTime: `${formData.startTime}:00`,
-                    endTime: `${formData.endTime}:00`,
-                    remindEnabled: formData.remindEnabled,
-                    remindOffsetMinutes: formData.remindOffsetMinutes,
-                    user: { id: userId },
-                    category: { id: parseInt(selectedCategory.value) }
+                    day: d, startTime: `${formData.startTime}:00`, endTime: `${formData.endTime}:00`,
+                    remindEnabled: formData.remindEnabled, remindOffsetMinutes: formData.remindOffsetMinutes,
+                    user: { id: userId }, category: { id: parseInt(selectedCategory.value) }
                 }));
                 await scheduleBlockService.createBulk(payloads);
             }
             onClose();
         } catch (err) {
-            const errorMsg = err.response?.data || "Failed to save schedule. Unknown overlap error.";
-            customAlert("Schedule Conflict", errorMsg);
+            customAlert("Schedule Conflict", "Failed to save schedule. Check for overlapping times.");
         }
     };
 
@@ -82,19 +89,14 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
             <div className="modal-header"><h3>{initialData ? 'Edit Block' : 'New Schedule Block'}</h3></div>
             <form onSubmit={handleSubmit}>
 
-                {/* MULTI-DAY ROW UI */}
                 <div className="form-group">
                     <label>Select Days {initialData && <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '5px' }}>(Edit locked to single day)</span>}</label>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', marginTop: '5px' }}>
                         {DAYS.map(d => (
-                            <div
-                                key={d}
-                                onClick={() => toggleDay(d)}
+                            <div key={d} onClick={() => toggleDay(d)}
                                 style={{
-                                    width: '35px', height: '35px', borderRadius: '50%',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 'bold', fontSize: '12px', cursor: initialData ? 'not-allowed' : 'pointer',
-                                    transition: '0.2s',
+                                    width: '35px', height: '35px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 'bold', fontSize: '12px', cursor: initialData ? 'not-allowed' : 'pointer', transition: '0.2s',
                                     background: selectedDays.includes(d) ? 'var(--primary)' : 'var(--bg-secondary)',
                                     color: selectedDays.includes(d) ? 'white' : 'var(--text-muted)',
                                     border: `1px solid ${selectedDays.includes(d) ? 'var(--primary)' : 'var(--border)'}`
@@ -107,12 +109,15 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
                 </div>
 
                 <div className="form-group">
-                    <label>Activity Category *</label>
-                    <Select
-                        value={selectedCategory}
+                    <label>Activity Name (Type to create a new one) *</label>
+                    <CreatableSelect
+                        isDisabled={isCreatingCategory}
+                        isLoading={isCreatingCategory}
                         onChange={setSelectedCategory}
+                        onCreateOption={handleCreateCategory}
                         options={categoryOptions}
-                        placeholder="Search categories..."
+                        value={selectedCategory}
+                        placeholder="e.g. Coding, Gym, Deep Work..."
                         classNamePrefix="react-select"
                         isClearable required menuPortalTarget={document.body}
                         styles={{ menuPortal: base => ({ ...base, zIndex: 99999 }) }}
