@@ -28,9 +28,13 @@ public class Task {
 
     private LocalDateTime remindAt;
 
-    // <--- NEW: Track if the task is finished
-    private boolean completed = false;
-    
+    // FIX: Using Boolean object wrapper
+    private Boolean completed = false;
+
+    // FIX: Added reminder tracking for Sprints, using Boolean wrapper
+    @Column(name = "reminder_sent")
+    private Boolean reminderSent = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference

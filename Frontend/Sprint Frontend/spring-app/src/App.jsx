@@ -6,7 +6,8 @@ import ScheduleDashboard from './components/Schedule/ScheduleDashboard';
 import PomodoroDashboard from './components/Pomodoro/PomodoroDashboard';
 import Login from './components/login/Login';
 import Register from './components/login/Register';
-import AlertSystem from './components/AlertSystem'; // <-- NEW
+import AlertSystem from './components/AlertSystem';
+import NotificationEngine from './components/NotificationEngine'; // <-- 1. ADDED THIS IMPORT (Check path if needed)
 import { authService } from './api';
 import './App.css';
 
@@ -46,7 +47,11 @@ function App() {
 
   return (
     <div className="app-container">
-      <AlertSystem /> {/* <-- Custom Alert Modal Container */}
+      <AlertSystem />
+
+      {/* 2. ADDED THIS LINE. This connects React to the Java Server! */}
+      <NotificationEngine userId={userId} />
+
       <aside className="sidebar-modern">
         <div className="sidebar-brand">
           <div className="brand-logo">M</div>

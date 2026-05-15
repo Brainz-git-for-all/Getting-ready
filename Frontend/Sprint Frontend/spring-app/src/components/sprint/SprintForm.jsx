@@ -23,6 +23,9 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
     const [newTaskCategory, setNewTaskCategory] = useState(null);
     const [newTaskDateRange, setNewTaskDateRange] = useState([null, null]);
 
+    // NEW: Reminder State for Tasks
+    const [newTaskRemindAt, setNewTaskRemindAt] = useState('');
+
     const priorityOptions = [
         { value: 'High', label: 'High' },
         { value: 'Medium', label: 'Medium' },
@@ -42,7 +45,6 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
         }
     }, [userId, initialData]);
 
-    // Validation to prevent tasks from exceeding sprint dates (OPTION B)
     const checkTaskBounds = (tStartDate, tEndDate) => {
         if (!sprintStartDate || !sprintEndDate) return true;
         const tStart = new Date(tStartDate).setHours(0, 0, 0, 0);
@@ -66,6 +68,8 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
             priority: newTaskPriority.value,
             startDate: formatDate(newTaskDateRange[0]),
             endDate: formatDate(newTaskDateRange[1]),
+            // NEW: Attach reminder to task payload
+            remindAt: newTaskRemindAt ? `${newTaskRemindAt}:00` : null,
             category: newTaskCategory ? { id: parseInt(newTaskCategory.value) } : null,
             categoryName: newTaskCategory ? newTaskCategory.label : 'Uncategorized'
         };
@@ -74,6 +78,7 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
         setNewTaskName('');
         setNewTaskCategory(null);
         setNewTaskDateRange([sprintStartDate, sprintEndDate]);
+        setNewTaskRemindAt(''); // NEW: Reset reminder state
         setShowTaskModal(false);
     };
 
@@ -145,7 +150,11 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
                             <li key={idx} className="task-item">
                                 <div>
                                     <span className="task-name">{t.name}</span>
-                                    <span className="task-meta">{t.startDate} to {t.endDate} • {t.categoryName || 'Uncategorized'}</span>
+                                    <span className="task-meta">
+                                        {t.startDate} to {t.endDate} • {t.categoryName || 'Uncategorized'}
+                                        {/* NEW: Display reminder badge if a reminder is set */}
+                                        {t.remindAt && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⏰ {t.remindAt.replace('T', ' ').substring(0, 16)}</span>}
+                                    </span>
                                 </div>
                                 <button type="button" className="btn-delete" onClick={() => handleRemoveTask(idx)}>Remove</button>
                             </li>
@@ -175,6 +184,16 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
                                 isClearable={true}
                                 placeholderText="Select Task Duration..."
                                 className="date-picker-input"
+                            />
+                        </div>
+
+                        {/* NEW: Input for Custom Reminder Time */}
+                        <div className="form-group">
+                            <label>Reminder (Exact Date & Time)</label>
+                            <input
+                                type="datetime-local"
+                                value={newTaskRemindAt}
+                                onChange={(e) => setNewTaskRemindAt(e.target.value)}
                             />
                         </div>
 

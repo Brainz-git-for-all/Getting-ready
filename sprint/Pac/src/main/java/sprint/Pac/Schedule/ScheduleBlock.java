@@ -5,6 +5,7 @@ import lombok.*;
 import sprint.Pac.Activity.ActivityCategory;
 import sprint.Pac.Jwt.User;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -36,4 +37,7 @@ public class ScheduleBlock {
     @ManyToOne
     @JoinColumn(name = "category_id")
     private ActivityCategory category;
+
+    @Column(name = "last_reminded_date")
+    private LocalDate lastRemindedDate;
 }

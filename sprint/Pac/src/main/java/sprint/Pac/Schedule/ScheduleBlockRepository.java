@@ -9,4 +9,5 @@ public interface ScheduleBlockRepository extends JpaRepository<ScheduleBlock, Lo
 
     // ADD THIS: To fetch all blocks for the dashboard
     List<ScheduleBlock> findByUserId(Long userId);
+    List<ScheduleBlock> findByDayAndRemindEnabledTrue(DayOfWeek day);
 }

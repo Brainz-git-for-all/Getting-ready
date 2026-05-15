@@ -29,15 +29,20 @@ public class QuickTask {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    // NEW: Custom Reminder Time
+    // Custom Reminder Time
     private LocalDateTime remindAt;
 
     @Column(name = "user_id")
     private Long userId;
 
+    // FIX: Using Boolean object wrapper to handle legacy NULL records
     private Boolean completed = false;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
     private ActivityCategory category;
+
+    // FIX: Using Boolean object wrapper to handle legacy NULL records
+    @Column(name = "reminder_sent")
+    private Boolean reminderSent = false;
 }

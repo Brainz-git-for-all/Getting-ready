@@ -49,6 +49,8 @@ public class WebSecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/error").permitAll() // FIX: Prevents 500 crashes turning into fake 401s
+                        .requestMatchers("/ws/**").permitAll() // FIX: Allows WebSocket connections
                         .requestMatchers("/api/sprints/**").authenticated()
                         .requestMatchers("/api/habits/**").authenticated()
                         .anyRequest().authenticated()
@@ -62,15 +64,12 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 🟢 FIX: Allow BOTH localhost and your local network IP address
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "http://192.168.65.38:5173"
         ));
 
-        // ADDED "PATCH" TO THIS LIST 👇
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Set-Cookie"));
