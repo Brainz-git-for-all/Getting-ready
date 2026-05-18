@@ -88,4 +88,11 @@ export const quickTaskService = {
     delete: (id) => api.delete(`/quick-tasks/${id}`)
 };
 
+// Change the aiService block to this:
+export const aiService = {
+    // We use the 'api' instance we created at the top of the file
+    saveProfile: (data) => api.post('/ai/onboarding', data),
+    chat: (data) => api.post('/ai/chat', data),
+    acceptProposal: (data) => api.post('/ai/accept-proposal', data)
+};
 export default api;

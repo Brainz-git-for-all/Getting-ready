@@ -7,7 +7,8 @@ import PomodoroDashboard from './components/Pomodoro/PomodoroDashboard';
 import Login from './components/login/Login';
 import Register from './components/login/Register';
 import AlertSystem from './components/AlertSystem';
-import NotificationEngine from './components/NotificationEngine'; // <-- 1. ADDED THIS IMPORT (Check path if needed)
+import NotificationEngine from './components/NotificationEngine';
+import SprintBot from './components/bot/SprintBot ';
 import { authService } from './api';
 import './App.css';
 
@@ -48,9 +49,10 @@ function App() {
   return (
     <div className="app-container">
       <AlertSystem />
-
-      {/* 2. ADDED THIS LINE. This connects React to the Java Server! */}
       <NotificationEngine userId={userId} />
+
+      {/* NEW: THE FLOATING AI BOT */}
+      <SprintBot userId={userId} />
 
       <aside className="sidebar-modern">
         <div className="sidebar-brand">
@@ -78,8 +80,7 @@ function App() {
           <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             {activeTab === 'schedule' && (
               <div className="global-schedule-actions" style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn-secondary" onClick={() => window.dispatchEvent(new CustomEvent('toggle-cat-view'))}>Categories</button>
-                <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('open-block-modal'))}>+ Block</button>
+                <button className="btn-primary" onClick={() => window.dispatchEvent(new CustomEvent('open-block-modal'))}>+ Schedule Block</button>
               </div>
             )}
             <div className="avatar">{localStorage.getItem('username')?.charAt(0)?.toUpperCase() || 'U'}</div>

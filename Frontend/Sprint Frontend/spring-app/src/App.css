@@ -1376,3 +1376,141 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     border-radius: 8px;
     border: 1px dashed var(--border);
 }
+
+.bot-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 99999;
+}
+
+.bot-bubble {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #4f46e5, #c026d3);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+    transition: transform 0.3s;
+}
+
+.bot-bubble:hover {
+    transform: scale(1.1);
+}
+
+.bot-window {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 380px;
+    height: 600px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.bot-header {
+    background: linear-gradient(135deg, #4f46e5, #c026d3);
+    color: white;
+    padding: 16px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bot-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f8fafc;
+}
+
+.msg-user {
+    align-self: flex-end;
+    background: #4f46e5;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 16px 16px 0 16px;
+    max-width: 80%;
+    font-size: 14px;
+}
+
+.msg-ai {
+    align-self: flex-start;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    padding: 10px 14px;
+    border-radius: 16px 16px 16px 0;
+    max-width: 85%;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.bot-input-area {
+    padding: 12px;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 8px;
+}
+
+.bot-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    outline: none;
+}
+
+.bot-input:focus {
+    border-color: #4f46e5;
+}
+
+.bot-send {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+}
+
+/* The AI Proposal Card */
+.proposal-card {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.proposal-accept-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.proposal-accept-btn:hover {
+    background: #059669;
+}
