@@ -35,6 +35,8 @@ public class Task {
     @Column(name = "reminder_sent")
     private Boolean reminderSent = false;
 
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sprint_id" , nullable = false)
     @JsonBackReference

@@ -16,9 +16,12 @@ public class User {
     private String username;
     private String password;
 
-    // NEW: Contact info for offline notifications
     private String email;
     private String phoneNumber;
+
+    // NEW: AI Context Memory (Stores onboarding questionnaire answers)
+    @Column(columnDefinition = "TEXT", name = "ai_profile")
+    private String aiProfile;
 
     public User(Long id, String username, String password, String email, String phoneNumber) {
         this.id = id;
