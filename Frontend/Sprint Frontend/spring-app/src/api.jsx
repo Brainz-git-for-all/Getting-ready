@@ -87,9 +87,11 @@ export const quickTaskService = {
     update: (id, taskData) => api.put(`/quick-tasks/${id}`, taskData),
     delete: (id) => api.delete(`/quick-tasks/${id}`)
 };
+
 export const aiService = {
     saveProfile: (data) => api.post('/ai/onboarding', data),
     chat: (data) => api.post('/ai/chat', data),
-    acceptProposal: (data) => api.post('/ai/accept-proposal', data)
+    acceptProposal: (data) => api.post('/ai/accept-proposal', data),
+    getTips: (userId) => api.get(`/ai/tips/${userId}`) // <-- NEW
 };
 export default api;

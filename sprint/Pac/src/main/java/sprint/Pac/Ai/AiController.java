@@ -45,6 +45,11 @@ public class AiController {
         return ResponseEntity.ok("Profile saved successfully.");
     }
 
+    // 0. NEW: Endpoint to get daily tips
+    @GetMapping("/tips/{userId}")
+    public ResponseEntity<String> getDailyTips(@PathVariable Long userId) {
+        return ResponseEntity.ok(geminiAiService.generateDailyTips(userId));
+    }
     @PostMapping("/chat")
     public ResponseEntity<String> chatWithAi(@RequestBody AiChatRequest request) {
         return ResponseEntity.ok(geminiAiService.generateAiResponse(request.getUserId(), request.getHistory()));
