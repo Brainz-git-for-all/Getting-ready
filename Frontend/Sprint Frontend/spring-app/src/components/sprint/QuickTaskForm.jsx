@@ -5,8 +5,11 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { quickTaskService, categoryService } from '../../api';
 
 const formatDate = (date) => date ? date.toISOString().split('T')[0] : '';
+const parseDate = (str) => str ? new Date(str + 'T00:00:00') : null;
 
-const QuickTaskForm = ({ userId, onTaskCreated, onCancel }) => {
+const QuickTaskForm = ({ userId, onTaskCreated, onCancel, existingTask }) => {
+    const isEditing = !!existingTask;
+
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
 
@@ -23,33 +26,54 @@ const QuickTaskForm = ({ userId, onTaskCreated, onCancel }) => {
 
     useEffect(() => {
         categoryService.getAllByUser(userId).then(res => {
-            setCategoryOptions((res.data || []).map(c => ({ value: c.id, label: c.name })));
+            const options = (res.data || []).map(c => ({ value: c.id, label: c.name }));
+            setCategoryOptions(options);
+
+            if (existingTask) {
+                setName(existingTask.name || '');
+                setDescription(existingTask.description || '');
+                const matchedPriority = priorityOptions.find(p => p.value === existingTask.priority) || priorityOptions[1];
+                setPriority(matchedPriority);
+                setDateRange([parseDate(existingTask.startDate), parseDate(existingTask.endDate)]);
+                if (existingTask.remindAt) setRemindAt(existingTask.remindAt.substring(0, 16));
+                if (existingTask.category) {
+                    const cat = options.find(o => o.value === existingTask.category.id);
+                    if (cat) setSelectedCategory(cat);
+                }
+            }
         });
-    }, [userId]);
+    }, [userId, existingTask]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!name.trim() || !startDate || !endDate) return;
         setIsSubmitting(true);
         try {
-            await quickTaskService.create({
+            const payload = {
                 name, description, priority: priority.value,
                 startDate: formatDate(startDate),
                 endDate: formatDate(endDate),
                 remindAt: remindAt ? `${remindAt}:00` : null,
-                userId: userId, completed: false,
+                userId: userId, completed: existingTask?.completed || false,
                 category: selectedCategory ? { id: parseInt(selectedCategory.value) } : null
-            });
+            };
+            if (isEditing) {
+                await quickTaskService.update(existingTask.id, payload);
+            } else {
+                await quickTaskService.create(payload);
+            }
             onTaskCreated();
-        } catch (error) { console.error("Failed to create quick task:", error); }
+        } catch (error) { console.error("Failed to save quick task:", error); }
         finally { setIsSubmitting(false); }
     };
 
     return (
         <div className="form-card">
             <div className="form-header">
-                <h2>⚡ Create Quick Task</h2>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Add a standalone task with a specific timeframe.</p>
+                <h2>⚡ {isEditing ? 'Edit Quick Task' : 'Create Quick Task'}</h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
+                    {isEditing ? 'Update the details of this task.' : 'Add a standalone task with a specific timeframe.'}
+                </p>
             </div>
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
@@ -110,7 +134,9 @@ const QuickTaskForm = ({ userId, onTaskCreated, onCancel }) => {
 
                 <div className="modal-actions">
                     <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
-                    <button type="submit" className="btn-submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Task'}</button>
+                    <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : isEditing ? 'Update Task' : 'Save Task'}
+                    </button>
                 </div>
             </form>
         </div>

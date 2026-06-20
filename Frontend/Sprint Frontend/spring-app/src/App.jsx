@@ -92,8 +92,11 @@ function App() {
           {activeTab === 'schedule' && <ScheduleDashboard userId={userId} />}
           {activeTab === 'sprints' && <SprintDashboard userId={userId} />}
           {activeTab === 'habits' && <HabitDashboard userId={userId} />}
-          {activeTab === 'pomodoro' && <PomodoroDashboard userId={userId} />}
-          {activeTab === 'tips' && <TipsDashboard userId={userId} />} {/* <-- NEW RENDERER */}
+          {/* Always mounted so the timer never resets on tab switch */}
+          <div style={{ display: activeTab === 'pomodoro' ? 'block' : 'none' }}>
+            <PomodoroDashboard userId={userId} />
+          </div>
+          {activeTab === 'tips' && <TipsDashboard userId={userId} />}
         </section>
       </main>
     </div>

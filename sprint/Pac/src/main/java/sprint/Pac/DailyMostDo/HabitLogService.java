@@ -42,7 +42,11 @@ public class HabitLogService {
         Habit habit = habitRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Habit not found: " + id));
         habit.setName(newHabit.getName());
-        habit.setBadHabit(newHabit.getBadHabit()); // Updated to use getBadHabit()
+        habit.setBadHabit(newHabit.getBadHabit());
+        habit.setDescription(newHabit.getDescription());
+        habit.setRemindEnabled(newHabit.getRemindEnabled());
+        habit.setRemindTime(newHabit.getRemindTime());
+        habit.setCategory(newHabit.getCategory());
         return habitRepository.save(habit);
     }
 

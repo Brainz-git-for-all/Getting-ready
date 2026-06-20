@@ -31,6 +31,33 @@ table {
     font-family: inherit;
 }
 
+/* Custom thin scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* React Select font fix */
+.react-select__single-value,
+.react-select__placeholder,
+.react-select__input input,
+.react-select__option,
+.react-select__menu {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    font-size: 14px !important;
+}
+
 /* DATE & TIME INPUT FIX */
 input[type="date"],
 input[type="time"] {
@@ -229,8 +256,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     flex: 1;
     overflow-y: auto;
     padding: 30px;
-    max-width: 1200px;
-    margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
 }
@@ -322,6 +347,33 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     background-color: #fecaca;
     border-color: #fca5a5;
     color: var(--danger-hover);
+}
+
+/* Sprint task modal delete button */
+.pop-del {
+    background: transparent;
+    color: var(--danger);
+    border: 1.5px solid var(--danger);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
+    transition: all 0.2s;
+    font-family: inherit;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.pop-del:hover {
+    background-color: var(--danger);
+    color: white;
+    border-color: var(--danger);
 }
 
 /* Forms */

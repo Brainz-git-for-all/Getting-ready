@@ -4,6 +4,7 @@ import { habitService, categoryService } from '../../api';
 
 const HabitForm = ({ userId, existingHabit, onClose }) => {
     const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
     const [isBad, setIsBad] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [remindEnabled, setRemindEnabled] = useState(false);
@@ -28,6 +29,7 @@ const HabitForm = ({ userId, existingHabit, onClose }) => {
     useEffect(() => {
         if (existingHabit) {
             setName(existingHabit.name);
+            setDescription(existingHabit.description || '');
             setIsBad(existingHabit.badHabit);
             setRemindEnabled(existingHabit.remindEnabled || false);
             setRemindTime(existingHabit.remindTime ? existingHabit.remindTime.substring(0, 5) : '09:00');
@@ -39,7 +41,7 @@ const HabitForm = ({ userId, existingHabit, onClose }) => {
         setIsSubmitting(true);
         try {
             const habitData = {
-                name, userId: userId, badHabit: isBad,
+                name, description, userId: userId, badHabit: isBad,
                 remindEnabled, remindTime: remindEnabled ? `${remindTime}:00` : null,
                 category: selectedCategory ? { id: parseInt(selectedCategory.value) } : null
             };
@@ -57,6 +59,16 @@ const HabitForm = ({ userId, existingHabit, onClose }) => {
                 <div className="form-group">
                     <label>Habit Name</label>
                     <input type="text" placeholder="e.g., Drink 2L of water..." value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                        placeholder="Why do you want to build (or break) this habit? Be specific..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows="3"
+                    />
                 </div>
 
                 <div className="form-group">

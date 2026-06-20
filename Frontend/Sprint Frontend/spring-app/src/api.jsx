@@ -92,6 +92,7 @@ export const aiService = {
     saveProfile: (data) => api.post('/ai/onboarding', data),
     chat: (data) => api.post('/ai/chat', data),
     acceptProposal: (data) => api.post('/ai/accept-proposal', data),
-    getTips: (userId) => api.get(`/ai/tips/${userId}`) // <-- NEW
+    getTips: (userId) => api.get(`/ai/tips/${userId}`),
+    getHabitInsights: (userId) => api.get(`/ai/habit-insights/${userId}`)
 };
 export default api;

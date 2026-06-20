@@ -15,6 +15,7 @@ const SprintDashboard = ({ userId }) => {
   const [editingSprint, setEditingSprint] = useState(null);
   const [selectedSprintTasks, setSelectedSprintTasks] = useState(null);
   const [showQuickTaskForm, setShowQuickTaskForm] = useState(false);
+  const [editingQuickTask, setEditingQuickTask] = useState(null);
 
   const fetchData = async () => {
     if (!userId) return;
@@ -113,7 +114,7 @@ const SprintDashboard = ({ userId }) => {
             </button>
           )}
           {viewMode === 'tasks' && !showSprintForm && (
-            <button className="btn-add-sprint" style={{ backgroundColor: 'var(--warning)' }} onClick={() => setShowQuickTaskForm(!showQuickTaskForm)}>
+            <button className="btn-add-sprint" style={{ backgroundColor: 'var(--warning)' }} onClick={() => { setEditingQuickTask(null); setShowQuickTaskForm(!showQuickTaskForm); }}>
               {showQuickTaskForm ? '← Back' : '⚡ Add Quick Task'}
             </button>
           )}
@@ -122,7 +123,14 @@ const SprintDashboard = ({ userId }) => {
 
       <main className="dashboard-content">
         {showSprintForm && <SprintForm userId={userId} initialData={editingSprint} onSprintCreated={() => { setShowSprintForm(false); fetchData(); }} />}
-        {showQuickTaskForm && <QuickTaskForm userId={userId} onTaskCreated={() => { setShowQuickTaskForm(false); fetchData(); }} onCancel={() => setShowQuickTaskForm(false)} />}
+        {showQuickTaskForm && (
+          <QuickTaskForm
+            userId={userId}
+            existingTask={editingQuickTask}
+            onTaskCreated={() => { setShowQuickTaskForm(false); setEditingQuickTask(null); fetchData(); }}
+            onCancel={() => { setShowQuickTaskForm(false); setEditingQuickTask(null); }}
+          />
+        )}
 
         {!showSprintForm && !showQuickTaskForm && (
           <div className="table-wrapper">
@@ -197,7 +205,10 @@ const SprintDashboard = ({ userId }) => {
                             </span>
                           </div>
                         </td>
-                        <td><button className="btn-delete" onClick={() => handleDeleteQuickTask(qt.id)}>Delete</button></td>
+                        <td>
+                            <button className="btn-edit" onClick={() => { setEditingQuickTask(qt); setShowQuickTaskForm(true); }}>Edit</button>
+                            <button className="btn-delete" onClick={() => handleDeleteQuickTask(qt.id)}>Delete</button>
+                        </td>
                       </tr>
                     ))
                   )}

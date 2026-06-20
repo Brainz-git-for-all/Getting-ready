@@ -15,15 +15,14 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
 
     const [categoryOptions, setCategoryOptions] = useState([]);
     const [showTaskModal, setShowTaskModal] = useState(false);
+    const [editingTaskIndex, setEditingTaskIndex] = useState(null);
     const [errorMsg, setErrorMsg] = useState('');
 
-    // New Task States
+    // Task form states
     const [newTaskName, setNewTaskName] = useState('');
     const [newTaskPriority, setNewTaskPriority] = useState({ value: 'Medium', label: 'Medium' });
     const [newTaskCategory, setNewTaskCategory] = useState(null);
     const [newTaskDateRange, setNewTaskDateRange] = useState([null, null]);
-
-    // NEW: Reminder State for Tasks
     const [newTaskRemindAt, setNewTaskRemindAt] = useState('');
 
     const priorityOptions = [
@@ -54,7 +53,30 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
         return (tStart >= sStart && tEnd <= sEnd);
     };
 
-    const handleAddTask = (e) => {
+    const openAddTask = () => {
+        setEditingTaskIndex(null);
+        setNewTaskName('');
+        setNewTaskPriority({ value: 'Medium', label: 'Medium' });
+        setNewTaskCategory(null);
+        setNewTaskDateRange([sprintStartDate, sprintEndDate]);
+        setNewTaskRemindAt('');
+        setShowTaskModal(true);
+    };
+
+    const openEditTask = (idx) => {
+        const t = tasks[idx];
+        setEditingTaskIndex(idx);
+        setNewTaskName(t.name || '');
+        setNewTaskPriority({ value: t.priority || 'Medium', label: t.priority || 'Medium' });
+        const catOpt = t.category ? categoryOptions.find(o => o.value === t.category.id) || { value: t.category.id, label: t.categoryName || 'Unknown' } : null;
+        setNewTaskCategory(catOpt);
+        const parseD = (s) => s ? new Date(s + 'T00:00:00') : null;
+        setNewTaskDateRange([parseD(t.startDate), parseD(t.endDate)]);
+        setNewTaskRemindAt(t.remindAt ? t.remindAt.substring(0, 16) : '');
+        setShowTaskModal(true);
+    };
+
+    const handleSaveTask = (e) => {
         e.preventDefault();
         if (!newTaskName.trim() || !newTaskDateRange[0] || !newTaskDateRange[1]) return;
 
@@ -63,23 +85,27 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
             return;
         }
 
-        const taskToAdd = {
+        const taskData = {
+            ...(editingTaskIndex !== null ? tasks[editingTaskIndex] : {}),
             name: newTaskName,
             priority: newTaskPriority.value,
             startDate: formatDate(newTaskDateRange[0]),
             endDate: formatDate(newTaskDateRange[1]),
-            // NEW: Attach reminder to task payload
             remindAt: newTaskRemindAt ? `${newTaskRemindAt}:00` : null,
             category: newTaskCategory ? { id: parseInt(newTaskCategory.value) } : null,
             categoryName: newTaskCategory ? newTaskCategory.label : 'Uncategorized'
         };
 
-        setTasks([...tasks, taskToAdd]);
-        setNewTaskName('');
-        setNewTaskCategory(null);
-        setNewTaskDateRange([sprintStartDate, sprintEndDate]);
-        setNewTaskRemindAt(''); // NEW: Reset reminder state
+        if (editingTaskIndex !== null) {
+            const updated = [...tasks];
+            updated[editingTaskIndex] = taskData;
+            setTasks(updated);
+        } else {
+            setTasks([...tasks, taskData]);
+        }
+
         setShowTaskModal(false);
+        setEditingTaskIndex(null);
     };
 
     const handleRemoveTask = (indexToRemove) => {
@@ -142,7 +168,7 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
                 <div style={{ margin: '20px 0', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <label style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Sprint Tasks</label>
-                        <button type="button" className="btn-secondary" onClick={() => setShowTaskModal(true)}>+ Add Task</button>
+                        <button type="button" className="btn-secondary" onClick={openAddTask}>+ Add Task</button>
                     </div>
 
                     <ul className="task-list">
@@ -152,11 +178,13 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
                                     <span className="task-name">{t.name}</span>
                                     <span className="task-meta">
                                         {t.startDate} to {t.endDate} • {t.categoryName || 'Uncategorized'}
-                                        {/* NEW: Display reminder badge if a reminder is set */}
                                         {t.remindAt && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⏰ {t.remindAt.replace('T', ' ').substring(0, 16)}</span>}
                                     </span>
                                 </div>
-                                <button type="button" className="btn-delete" onClick={() => handleRemoveTask(idx)}>Remove</button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button type="button" className="btn-edit" onClick={() => openEditTask(idx)}>Edit</button>
+                                    <button type="button" className="btn-delete" onClick={() => handleRemoveTask(idx)}>Remove</button>
+                                </div>
                             </li>
                         ))}
                         {tasks.length === 0 && <p className="empty-tasks">No tasks added yet.</p>}
@@ -168,7 +196,7 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
             {showTaskModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <div className="modal-header"><h3>Add Task to Sprint</h3></div>
+                        <div className="modal-header"><h3>{editingTaskIndex !== null ? 'Edit Task' : 'Add Task to Sprint'}</h3></div>
                         <div className="form-group">
                             <label>Task Name</label>
                             <input type="text" placeholder="e.g., Build Login API" value={newTaskName} onChange={e => setNewTaskName(e.target.value)} />
@@ -225,8 +253,10 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
                         </div>
 
                         <div className="modal-actions">
-                            <button className="btn-cancel" onClick={() => setShowTaskModal(false)}>Cancel</button>
-                            <button className="btn-save" onClick={handleAddTask}>Add Task</button>
+                            <button className="btn-cancel" onClick={() => { setShowTaskModal(false); setEditingTaskIndex(null); }}>Cancel</button>
+                            <button className="btn-save" onClick={handleSaveTask}>
+                                {editingTaskIndex !== null ? 'Update Task' : 'Add Task'}
+                            </button>
                         </div>
                     </div>
                 </div>

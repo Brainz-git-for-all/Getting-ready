@@ -39,7 +39,11 @@ public class Habit {
     @Column(name = "last_reminded_date")
     private LocalDate lastRemindedDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @ManyToOne
     @JoinColumn(name = "category_id")
     private ActivityCategory category;
 }
+

@@ -50,6 +50,11 @@ public class AiController {
     public ResponseEntity<String> getDailyTips(@PathVariable Long userId) {
         return ResponseEntity.ok(geminiAiService.generateDailyTips(userId));
     }
+
+    @GetMapping("/habit-insights/{userId}")
+    public ResponseEntity<String> getHabitInsights(@PathVariable Long userId) {
+        return ResponseEntity.ok(geminiAiService.generateHabitInsights(userId));
+    }
     @PostMapping("/chat")
     public ResponseEntity<String> chatWithAi(@RequestBody AiChatRequest request) {
         return ResponseEntity.ok(geminiAiService.generateAiResponse(request.getUserId(), request.getHistory()));

@@ -35,8 +35,10 @@ public class AiContextBuilder {
                 .collect(Collectors.joining(", "));
 
         String habitsStr = habits.stream()
-                .map(h -> "Habit:" + h.getName() + " (CatID:" +
-                        (h.getCategory() != null ? h.getCategory().getId() : "None") + ")")
+                .map(h -> "Habit:" + h.getName() +
+                        (h.getDescription() != null && !h.getDescription().isEmpty() ? " [Desc:" + h.getDescription() + "]" : "") +
+                        " Type:" + (h.getBadHabit() ? "Bad" : "Good") +
+                        " (CatID:" + (h.getCategory() != null ? h.getCategory().getId() : "None") + ")")
                 .collect(Collectors.joining(", "));
 
         String scheduleStr = schedules.stream()

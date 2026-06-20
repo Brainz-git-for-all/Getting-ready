@@ -22,6 +22,10 @@ import sprint.Pac.Sprint.SprintRepository;
 import sprint.Pac.Sprint.Task;
 import sprint.Pac.Sprint.TaskRepository;
 
+import sprint.Pac.DailyMostDo.DailySession;
+import sprint.Pac.DailyMostDo.DailySessionRepository;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +48,7 @@ public class GeminiAiService {
     @Autowired private TaskRepository taskRepository;
     @Autowired private QuickTaskRepository quickTaskRepo;
     @Autowired private HabitRepository habitRepo;
+    @Autowired private DailySessionRepository sessionRepository;
 
     // --- 1. THE CHATBOT ENGINE ---
     public String generateAiResponse(Long userId, List<AiChatRequest.ChatMessage> history) {
@@ -115,6 +120,57 @@ public class GeminiAiService {
                 "Write an inspiring 'Advice of the Day' based on their specific goals, and generate EXACTLY 3 actionable tips analyzing their tasks/schedule.\n\n" +
                 "CRITICAL: Output ONLY valid JSON. No markdown. Format EXACTLY like this:\n" +
                 "{ \"adviceOfTheDay\": \"Discipline equals freedom. Tackle your hardest task first.\", \"tips\": [ \"Tip 1\", \"Tip 2\", \"Tip 3\" ] }";
+
+        return callChatGPT(systemInstruction, null);
+    }
+
+    // --- 3. HABIT INSIGHTS ENGINE ---
+    public String generateHabitInsights(Long userId) {
+        List<Habit> habits = habitRepo.findAll().stream()
+                .filter(h -> h.getUserId() != null && h.getUserId().equals(userId))
+                .collect(Collectors.toList());
+
+        if (habits.isEmpty()) {
+            return "{ \"overallMessage\": \"You have no habits set up yet. Add some habits to get personalized insights!\", \"insights\": [] }";
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate thirtyDaysAgo = today.minusDays(29);
+
+        List<DailySession> recentSessions = sessionRepository.findAllByUserId(userId).stream()
+                .filter(s -> s.getLogDate() != null && !s.getLogDate().isBefore(thirtyDaysAgo))
+                .collect(Collectors.toList());
+
+        StringBuilder habitData = new StringBuilder();
+        for (Habit h : habits) {
+            long daysLogged = recentSessions.stream()
+                    .filter(s -> s.getCompletedHabitIds() != null && s.getCompletedHabitIds().contains(h.getId()))
+                    .count();
+            int pct = (int) Math.round((daysLogged / 30.0) * 100);
+            boolean isBad = h.getBadHabit() != null && h.getBadHabit();
+
+            habitData.append("- Habit: \"").append(h.getName()).append("\"");
+            habitData.append(" | Type: ").append(isBad ? "BAD HABIT (goal: break it)" : "GOOD HABIT (goal: build it)");
+            if (h.getDescription() != null && !h.getDescription().isBlank()) {
+                habitData.append(" | User's goal: \"").append(h.getDescription()).append("\"");
+            }
+            habitData.append(" | Completion last 30 days: ").append(daysLogged).append("/30 days (").append(pct).append("%)");
+            habitData.append("\n");
+        }
+
+        String systemInstruction = "You are a personal habit coach AI. Below is a user's habit tracking data for the last 30 days.\n\n" +
+                "HABIT DATA:\n" + habitData + "\n" +
+                "YOUR TASK: Give SPECIFIC, HONEST, PERSONALIZED advice for EACH habit based on the completion percentage.\n" +
+                "- GOOD HABIT with low completion (<40%): diagnose why and give 2 concrete strategies to build consistency.\n" +
+                "- GOOD HABIT with medium completion (40-70%): acknowledge progress and suggest 1-2 ways to push higher.\n" +
+                "- GOOD HABIT with high completion (>70%): celebrate and give a tip to maintain the streak.\n" +
+                "- BAD HABIT with high completion (>50%): be direct about the problem and give 2 strategies to reduce/break it.\n" +
+                "- BAD HABIT with low completion (<50%): congratulate the progress and reinforce what's working.\n" +
+                "Always reference the user's own goal/description in your advice when available. Be direct, not generic.\n\n" +
+                "Output ONLY valid JSON, no markdown, in EXACTLY this format:\n" +
+                "{ \"overallMessage\": \"One honest sentence summarizing overall habit health.\", " +
+                "\"insights\": [ { \"name\": \"Habit name here\", \"daysLogged\": 20, \"totalDays\": 30, \"assessment\": \"On Track\", \"advice\": \"Specific advice here.\" } ] }\n" +
+                "Assessment must be one of: On Track, Good Progress, Needs Improvement, Struggling, Breaking Free (for bad habits reducing).";
 
         return callChatGPT(systemInstruction, null);
     }
