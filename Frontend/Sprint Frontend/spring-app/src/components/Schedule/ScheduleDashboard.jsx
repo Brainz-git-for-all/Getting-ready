@@ -124,8 +124,8 @@ const ScheduleDashboard = ({ userId }) => {
             // Sprints that cover this day
             const daySprints = sprints.filter(s => normalizeDate(s.startDate) <= dateStr && normalizeDate(s.endDate) >= dateStr);
 
-            // FIX: Quick Tasks that cover this day
-            const dayQuickTasks = quickTasks.filter(qt => normalizeDate(qt.startDate) <= dateStr && normalizeDate(qt.endDate) >= dateStr);
+            // Show quick tasks only on their due date
+            const dayQuickTasks = quickTasks.filter(qt => normalizeDate(qt.endDate) === dateStr);
 
             calendarCells.push(
                 <div key={day} className="calendar-day" style={{
@@ -142,7 +142,8 @@ const ScheduleDashboard = ({ userId }) => {
 
                     {daySprints.map(s => {
                         // FIX: Sprint Tasks that cover this day
-                        const sprintTasksToday = tasks.filter(t => !t._isQuick && t.sprintId === s.id && normalizeDate(t.startDate) <= dateStr && normalizeDate(t.endDate) >= dateStr);
+                        // Show sprint tasks only on their due date
+                        const sprintTasksToday = tasks.filter(t => !t._isQuick && t.sprintId === s.id && normalizeDate(t.endDate) === dateStr);
                         sprintTasksToday.sort((a, b) => getPriorityScore(b.priority) - getPriorityScore(a.priority));
 
                         return (
