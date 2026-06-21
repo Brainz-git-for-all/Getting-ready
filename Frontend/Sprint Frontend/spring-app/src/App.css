@@ -1584,5 +1584,144 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 .login-container .login-card {
     margin: 0;
-    /* Overrides the default margin so flexbox can center it perfectly */
+}
+
+/* =========================================
+   5. RESPONSIVE / MOBILE
+   ========================================= */
+@media (max-width: 768px) {
+
+    /* Convert sidebar to a bottom navigation bar */
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar-modern,
+    .sidebar-modern:hover {
+        width: 100vw;
+        height: 60px;
+        min-height: 60px;
+        flex-direction: row;
+        align-items: center;
+        padding: 0 8px;
+        gap: 0;
+        overflow: hidden;
+        order: 2;
+    }
+
+    .sidebar-brand {
+        display: none;
+    }
+
+    .nav-list {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
+        gap: 0;
+    }
+
+    .nav-link,
+    .sidebar-modern:hover .nav-link {
+        flex-direction: column;
+        gap: 3px;
+        padding: 6px 8px;
+        align-items: center;
+        font-size: 9px;
+    }
+
+    .nav-link span,
+    .sidebar-modern:hover .nav-link span {
+        opacity: 1;
+        visibility: visible;
+        font-size: 9px;
+    }
+
+    .sidebar-bottom {
+        flex-shrink: 0;
+    }
+
+    /* Main content area */
+    .main-viewport {
+        order: 1;
+        height: calc(100vh - 60px);
+    }
+
+    /* Header */
+    .viewport-header {
+        height: 56px;
+        min-height: 56px;
+        padding: 0 16px;
+    }
+
+    .header-title h2 {
+        font-size: 16px;
+    }
+
+    .header-title p {
+        display: none;
+    }
+
+    /* Content padding */
+    .viewport-content {
+        padding: 12px;
+    }
+
+    /* Schedule grid: allow horizontal scroll */
+    .timetable-main {
+        overflow-x: auto;
+    }
+
+    .day-labels-sticky,
+    .grid-viewport {
+        min-width: 640px;
+    }
+
+    .viewport-container-schedule {
+        --available-height: calc(100vh - 170px);
+    }
+
+    /* Dashboard grid: single column */
+    .dashboard-content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-metrics-row {
+        gap: 0.75rem;
+    }
+
+    /* Modals: full width */
+    .modal-content,
+    .form-card,
+    .login-card {
+        max-width: calc(100vw - 24px);
+        padding: 20px 16px;
+        margin: 12px;
+    }
+
+    /* Tables: scrollable */
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    /* Bot window */
+    .bot-container {
+        bottom: 72px;
+        right: 12px;
+    }
+
+    .bot-window {
+        width: calc(100vw - 32px);
+        right: 0;
+    }
+
+    /* Pomodoro timer: scale down */
+    .timer-circle {
+        width: 220px;
+        height: 220px;
+    }
+
+    .time-display {
+        font-size: 48px;
+    }
 }

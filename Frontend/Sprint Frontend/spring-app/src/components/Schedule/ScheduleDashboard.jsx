@@ -27,6 +27,7 @@ const ScheduleDashboard = ({ userId }) => {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [formModalData, setFormModalData] = useState(null);
     const [activeBlockId, setActiveBlockId] = useState(null);
+    const [todayLoggedIds, setTodayLoggedIds] = useState([]);
     const [visibleHours, setVisibleHours] = useState(14);
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -62,6 +63,17 @@ const ScheduleDashboard = ({ userId }) => {
         return () => window.removeEventListener('open-block-modal', handleOpenModal);
     }, [userId]);
 
+    useEffect(() => {
+        if (!activeBlockId || !userId) return;
+        const today = new Date().toISOString().split('T')[0];
+        habitService.getTodaysLog(userId, today)
+            .then(res => {
+                if (res.data?.completedHabitIds) setTodayLoggedIds(res.data.completedHabitIds.map(Number));
+                else setTodayLoggedIds([]);
+            })
+            .catch(() => setTodayLoggedIds([]));
+    }, [activeBlockId, userId]);
+
     const timeToRow = (t, isEnd = false) => {
         if (isEnd && t === "23:59") return 49;
         const [h, m] = t.split(':').map(Number); return (h * 2) + (m >= 30 ? 1 : 0) + 1;
@@ -90,7 +102,14 @@ const ScheduleDashboard = ({ userId }) => {
     };
 
     const handleLogClick = async (h) => {
-        await habitService.saveTodaysLog(userId, new Date().toISOString().split('T')[0], [h.id]); fetchData();
+        const today = new Date().toISOString().split('T')[0];
+        const isLogged = todayLoggedIds.includes(Number(h.id));
+        const newIds = isLogged
+            ? todayLoggedIds.filter(id => id !== Number(h.id))
+            : [...todayLoggedIds, Number(h.id)];
+        setTodayLoggedIds(newIds);
+        await habitService.saveTodaysLog(userId, today, newIds);
+        fetchData();
     };
 
     const handleTaskToggle = async (t) => {
@@ -179,11 +198,13 @@ const ScheduleDashboard = ({ userId }) => {
                         <button className="btn-secondary" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}>Next &gt;</button>
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                        <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px' }}>{d}</div>
-                    ))}
-                    {calendarCells}
+                <div style={{ overflowX: 'auto' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', minWidth: '560px' }}>
+                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                            <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px' }}>{d}</div>
+                        ))}
+                        {calendarCells}
+                    </div>
                 </div>
             </div>
         );
@@ -271,7 +292,13 @@ const ScheduleDashboard = ({ userId }) => {
                                             {modalHabits.map(h => (
                                                 <div key={h.id} className="details-item">
                                                     <span style={{ color: '#065f46', fontWeight: 600 }}>{h.name}</span>
-                                                    <button className="btn-primary" style={{ padding: '6px 12px', fontSize: '12px', background: '#10b981' }} onClick={() => handleLogClick(h)}>Log Habit</button>
+                                                    <button
+                                                        className="btn-primary"
+                                                        style={{ padding: '6px 12px', fontSize: '12px', background: todayLoggedIds.includes(Number(h.id)) ? '#059669' : '#10b981' }}
+                                                        onClick={() => handleLogClick(h)}
+                                                    >
+                                                        {todayLoggedIds.includes(Number(h.id)) ? '✓ Logged' : 'Log Habit'}
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
