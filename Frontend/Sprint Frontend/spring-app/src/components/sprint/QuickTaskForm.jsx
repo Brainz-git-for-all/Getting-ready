@@ -5,7 +5,11 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { quickTaskService, categoryService } from '../../api';
 
 const formatDate = (date) => date ? date.toISOString().split('T')[0] : '';
-const parseDate = (str) => str ? new Date(str + 'T00:00:00') : null;
+const parseDate = (val) => {
+    if (!val) return null;
+    if (Array.isArray(val)) return new Date(val[0], val[1] - 1, val[2]);
+    return new Date(val + 'T00:00:00');
+};
 
 const QuickTaskForm = ({ userId, onTaskCreated, onCancel, existingTask }) => {
     const isEditing = !!existingTask;

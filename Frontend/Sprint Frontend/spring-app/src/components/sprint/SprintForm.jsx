@@ -7,6 +7,13 @@ import { sprintService, categoryService } from '../../api';
 // Helper to format dates for the backend (YYYY-MM-DD)
 const formatDate = (date) => date ? date.toISOString().split('T')[0] : '';
 
+// Handles both array dates [y,m,d] from backend and string dates
+const toDate = (val) => {
+    if (!val) return null;
+    if (Array.isArray(val)) return new Date(val[0], val[1] - 1, val[2]);
+    return new Date(val + 'T00:00:00');
+};
+
 const SprintForm = ({ onSprintCreated, initialData, userId }) => {
     const [sprintName, setSprintName] = useState('');
     const [sprintDateRange, setSprintDateRange] = useState([null, null]);
@@ -39,8 +46,12 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
         }
         if (initialData) {
             setSprintName(initialData.name);
-            setSprintDateRange([new Date(initialData.startDate), new Date(initialData.endDate)]);
-            setTasks(initialData.tasks || []);
+            setSprintDateRange([toDate(initialData.startDate), toDate(initialData.endDate)]);
+            setTasks((initialData.tasks || []).map(t => ({
+                ...t,
+                startDate: Array.isArray(t.startDate) ? formatDate(toDate(t.startDate)) : t.startDate,
+                endDate: Array.isArray(t.endDate) ? formatDate(toDate(t.endDate)) : t.endDate,
+            })));
         }
     }, [userId, initialData]);
 
@@ -70,8 +81,7 @@ const SprintForm = ({ onSprintCreated, initialData, userId }) => {
         setNewTaskPriority({ value: t.priority || 'Medium', label: t.priority || 'Medium' });
         const catOpt = t.category ? categoryOptions.find(o => o.value === t.category.id) || { value: t.category.id, label: t.categoryName || 'Unknown' } : null;
         setNewTaskCategory(catOpt);
-        const parseD = (s) => s ? new Date(s + 'T00:00:00') : null;
-        setNewTaskDateRange([parseD(t.startDate), parseD(t.endDate)]);
+        setNewTaskDateRange([toDate(t.startDate), toDate(t.endDate)]);
         setNewTaskRemindAt(t.remindAt ? t.remindAt.substring(0, 16) : '');
         setShowTaskModal(true);
     };

@@ -3,8 +3,11 @@ package sprint.Pac.Sprint;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class SprintService {
@@ -50,7 +53,39 @@ public class SprintService {
                     sprint.setName(updatedSprint.getName());
                     sprint.setStartDate(updatedSprint.getStartDate());
                     sprint.setEndDate(updatedSprint.getEndDate());
-                    // Not updating userId here assuming it doesn't change, but you can add it if needed
+
+                    List<Task> incoming = updatedSprint.getTasks() != null ? updatedSprint.getTasks() : new ArrayList<>();
+
+                    // Collect IDs of tasks still in the updated list
+                    Set<Long> incomingIds = incoming.stream()
+                            .filter(t -> t.getId() != 0)
+                            .map(Task::getId)
+                            .collect(Collectors.toSet());
+
+                    // Remove tasks that were deleted (orphanRemoval handles the DB delete)
+                    sprint.getTasks().removeIf(t -> !incomingIds.contains(t.getId()));
+
+                    // Update existing tasks or add new ones
+                    for (Task t : incoming) {
+                        if (t.getId() != 0) {
+                            sprint.getTasks().stream()
+                                    .filter(existing -> existing.getId() == t.getId())
+                                    .findFirst()
+                                    .ifPresent(existing -> {
+                                        existing.setName(t.getName());
+                                        existing.setPriority(t.getPriority());
+                                        existing.setStartDate(t.getStartDate());
+                                        existing.setEndDate(t.getEndDate());
+                                        existing.setRemindAt(t.getRemindAt());
+                                        existing.setCategory(t.getCategory());
+                                        existing.setCompleted(t.getCompleted() != null ? t.getCompleted() : false);
+                                    });
+                        } else {
+                            t.setSprint(sprint);
+                            sprint.getTasks().add(t);
+                        }
+                    }
+
                     return sprintRepository.save(sprint);
                 });
     }

@@ -39,6 +39,10 @@ public class QuickTaskService {
         existingTask.setDescription(updatedTask.getDescription());
         existingTask.setCompleted(updatedTask.getCompleted());
         existingTask.setCategory(updatedTask.getCategory());
+        existingTask.setPriority(updatedTask.getPriority());
+        existingTask.setStartDate(updatedTask.getStartDate());
+        existingTask.setEndDate(updatedTask.getEndDate());
+        existingTask.setRemindAt(updatedTask.getRemindAt());
 
         return quickTaskRepository.save(existingTask);
     }
