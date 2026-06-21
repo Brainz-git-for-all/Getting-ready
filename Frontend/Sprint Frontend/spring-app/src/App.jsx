@@ -56,8 +56,8 @@ function App() {
 
       <aside className="sidebar-modern">
         <div className="sidebar-brand">
-          <div className="brand-logo">M</div>
-          <span className="brand-name">MY SPACE</span>
+          <div className="brand-logo">S</div>
+          <span className="brand-name">SPRINT APP</span>
         </div>
         <nav className="nav-list">
           <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><Icons.Dashboard /> <span>Overview</span></button>
