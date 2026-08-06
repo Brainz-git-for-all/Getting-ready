@@ -88,6 +88,13 @@ export const quickTaskService = {
     delete: (id) => api.delete(`/quick-tasks/${id}`)
 };
 
+export const innovationService = {
+    getAllByUser: (userId) => api.get(`/innovations/user/${userId}`),
+    create: (data) => api.post('/innovations', data),
+    update: (id, data) => api.put(`/innovations/${id}`, data),
+    delete: (id) => api.delete(`/innovations/${id}`),
+};
+
 export const aiService = {
     saveProfile: (data) => api.post('/ai/onboarding', data),
     chat: (data) => api.post('/ai/chat', data),

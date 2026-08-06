@@ -3,7 +3,6 @@ import confetti from 'canvas-confetti';
 import { proxyService } from '../../api';
 
 const SUCCESS_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
-const FAIL_SOUND = "https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3";
 
 // Simple Local XP Engine
 export const xpEngine = {
@@ -32,7 +31,6 @@ const PomodoroDashboard = ({ userId }) => {
     const [focusStreak, setFocusStreak] = useState(0);
 
     const successAudio = useRef(new Audio(SUCCESS_SOUND));
-    const failAudio = useRef(new Audio(FAIL_SOUND));
 
     // Calculate current XP reward based on streak
     const calculateXpReward = () => {
@@ -40,28 +38,6 @@ const PomodoroDashboard = ({ userId }) => {
         const bonus = focusStreak > 0 ? (focusStreak * 15) : 0;
         return base + bonus;
     };
-
-    // STRICT MODE: Tab Visibility Tracker
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.hidden && isRunning && mode === 'FOCUS') {
-                setIsRunning(false);
-                failAudio.current.play();
-                xpEngine.add(userId, -20, true);
-
-                // Reset Streak!
-                setFocusStreak(0);
-
-                alert("❌ STRICT MODE: You switched tabs!\nPenalty: -20 XP.\nStreak Reset to 0.\nFocus timer has been reset.");
-
-                setTimeLeft(25 * 60);
-                setTotalTime(25 * 60);
-            }
-        };
-
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-    }, [isRunning, mode, userId]);
 
     // Timer countdown logic
     useEffect(() => {

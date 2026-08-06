@@ -7,6 +7,7 @@ import ScheduleDashboard from './components/Schedule/ScheduleDashboard';
 import CalendarDashboard from './components/Schedule/CalendarDashboard';
 import PomodoroDashboard from './components/Pomodoro/PomodoroDashboard';
 import TipsDashboard from './components/tips/TipsDashboard'; // <-- NEW IMPORT
+import InnovationDashboard from './components/Innovation/InnovationDashboard';
 import Login from './components/login/Login';
 import Register from './components/login/Register';
 import AlertSystem from './components/AlertSystem';
@@ -24,6 +25,7 @@ const Icons = {
   QuickTasks: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>),
   Timer: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>),
   Tips: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 1 0 6 8c0 1.5.8 2.82 2.5 3.5.76.76 1.23 1.52 1.41 2.5z" /></svg>), // <-- NEW ICON
+  Innovations: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"></path><line x1="9" y1="21" x2="15" y2="21"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg>),
   Logout: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>)
 };
 
@@ -71,7 +73,8 @@ function App() {
           <button className={`nav-link ${activeTab === 'quicktasks' ? 'active' : ''}`} onClick={() => setActiveTab('quicktasks')}><Icons.QuickTasks /> <span>Quick Tasks</span></button>
           <button className={`nav-link ${activeTab === 'habits' ? 'active' : ''}`} onClick={() => setActiveTab('habits')}><Icons.Habits /> <span>Habits</span></button>
           <button className={`nav-link ${activeTab === 'pomodoro' ? 'active' : ''}`} onClick={() => setActiveTab('pomodoro')}><Icons.Timer /> <span>Focus Time</span></button>
-          <button className={`nav-link ${activeTab === 'tips' ? 'active' : ''}`} onClick={() => setActiveTab('tips')}><Icons.Tips /> <span>AI Tips</span></button> {/* <-- NEW SIDEBAR BUTTON */}
+          <button className={`nav-link ${activeTab === 'tips' ? 'active' : ''}`} onClick={() => setActiveTab('tips')}><Icons.Tips /> <span>AI Tips</span></button>
+          <button className={`nav-link ${activeTab === 'innovations' ? 'active' : ''}`} onClick={() => setActiveTab('innovations')}><Icons.Innovations /> <span>Innovations</span></button>
         </nav>
         <div className="sidebar-bottom" style={{ marginTop: 'auto' }}>
           <button className="nav-link logout-link" onClick={handleLogout}><Icons.Logout /> <span>Sign Out</span></button>
@@ -81,7 +84,7 @@ function App() {
       <main className="main-viewport">
         <header className="viewport-header">
           <div className="header-title">
-            <h2>{{ dashboard: 'Main Dashboard', schedule: 'Schedule Dashboard', calendar: 'Calendar', sprints: 'Sprints Dashboard', quicktasks: 'Quick Tasks', habits: 'Habits Dashboard', pomodoro: 'Focus Timer', tips: 'AI Tips' }[activeTab] || activeTab}</h2>
+            <h2>{{ dashboard: 'Main Dashboard', schedule: 'Schedule Dashboard', calendar: 'Calendar', sprints: 'Sprints Dashboard', quicktasks: 'Quick Tasks', habits: 'Habits Dashboard', pomodoro: 'Focus Timer', tips: 'AI Tips', innovations: 'Innovations & Thoughts' }[activeTab] || activeTab}</h2>
             <p>Welcome back, {localStorage.getItem('username')}</p>
           </div>
           <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -105,6 +108,7 @@ function App() {
             <PomodoroDashboard userId={userId} />
           </div>
           {activeTab === 'tips' && <TipsDashboard userId={userId} />}
+          {activeTab === 'innovations' && <InnovationDashboard userId={userId} />}
         </section>
       </main>
     </div>
