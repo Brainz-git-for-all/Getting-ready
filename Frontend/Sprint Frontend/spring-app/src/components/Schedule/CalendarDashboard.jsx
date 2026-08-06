@@ -53,7 +53,7 @@ const CalendarDashboard = ({ userId }) => {
         const isToday = new Date().toISOString().split('T')[0] === dateStr;
 
         const daySprints = sprints.filter(s => normalizeDate(s.startDate) <= dateStr && normalizeDate(s.endDate) >= dateStr);
-        const dayQuickTasks = quickTasks.filter(qt => normalizeDate(qt.endDate) === dateStr);
+        const dayQuickTasks = quickTasks.filter(qt => normalizeDate(qt.startDate) <= dateStr && normalizeDate(qt.endDate) >= dateStr);
 
         calendarCells.push(
             <div key={day} className="calendar-day" style={{
