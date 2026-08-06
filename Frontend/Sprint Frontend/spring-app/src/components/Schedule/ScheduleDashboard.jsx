@@ -6,30 +6,17 @@ import { customConfirm } from '../AlertSystem';
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const PRIORITY_SCORE = { 'High': 3, 'Medium': 2, 'Low': 1 };
 const getPriorityScore = (prio) => PRIORITY_SCORE[prio] || 0;
-const SPRINT_COLORS = ['#4f46e5', '#059669', '#e11d48', '#d97706', '#7c3aed', '#0891b2', '#c026d3', '#2563eb'];
-
-const normalizeDate = (dateVal) => {
-    if (!dateVal) return null;
-    if (Array.isArray(dateVal)) return `${dateVal[0]}-${String(dateVal[1]).padStart(2, '0')}-${String(dateVal[2]).padStart(2, '0')}`;
-    if (typeof dateVal === 'string') return dateVal.split('T')[0];
-    return null;
-};
 
 const ScheduleDashboard = ({ userId }) => {
-    const [viewMode, setViewMode] = useState('schedule');
-
     const [blocks, setBlocks] = useState([]);
     const [habits, setHabits] = useState([]);
     const [tasks, setTasks] = useState([]);
-    const [sprints, setSprints] = useState([]);
-    const [quickTasks, setQuickTasks] = useState([]);
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [formModalData, setFormModalData] = useState(null);
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [todayLoggedIds, setTodayLoggedIds] = useState([]);
     const [visibleHours, setVisibleHours] = useState(14);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const fetchData = async () => {
         if (!userId || userId === 'null') return;
@@ -47,8 +34,6 @@ const ScheduleDashboard = ({ userId }) => {
 
             setBlocks(normalizedBlocks);
             setHabits(habitRes.data || []);
-            setSprints(sprintRes.data || []);
-            setQuickTasks(qtRes.data || []);
 
             const sTasks = (sprintRes.data || []).flatMap(s => s.tasks.map(t => ({ ...t, sprintId: s.id, _isQuick: false })));
             const qTasks = (qtRes.data || []).map(t => ({ ...t, _isQuick: true }));
@@ -124,92 +109,6 @@ const ScheduleDashboard = ({ userId }) => {
         if (isConfirmed) { await scheduleBlockService.delete(id); setActiveBlockId(null); fetchData(); }
     };
 
-    const renderCalendar = () => {
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-        const calendarCells = [];
-        for (let i = 0; i < firstDay; i++) {
-            calendarCells.push(<div key={`empty-${i}`} className="calendar-day" style={{ background: 'transparent', border: 'none' }}></div>);
-        }
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
-
-            // Sprints that cover this day
-            const daySprints = sprints.filter(s => normalizeDate(s.startDate) <= dateStr && normalizeDate(s.endDate) >= dateStr);
-
-            // Show quick tasks only on their due date
-            const dayQuickTasks = quickTasks.filter(qt => normalizeDate(qt.endDate) === dateStr);
-
-            calendarCells.push(
-                <div key={day} className="calendar-day" style={{
-                    minHeight: '120px', border: isToday ? '2px solid var(--primary)' : '1px solid var(--border)',
-                    background: isToday ? 'var(--white)' : '#f8fafc', padding: '6px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '4px'
-                }}>
-                    <div style={{ textAlign: 'right', fontSize: '12px', fontWeight: 'bold', color: isToday ? 'var(--primary)' : 'var(--text-muted)' }}>{day}</div>
-
-                    {dayQuickTasks.map(qt => (
-                        <div key={`qt-${qt.id}`} style={{ fontSize: '10px', color: qt.completed ? 'var(--text-muted)' : '#b45309', background: '#fef3c7', padding: '2px 4px', borderRadius: '4px', textDecoration: qt.completed ? 'line-through' : 'none' }}>
-                            {qt.priority === 'High' ? '🔥 ' : '⚡ '}{qt.name}
-                        </div>
-                    ))}
-
-                    {daySprints.map(s => {
-                        // FIX: Sprint Tasks that cover this day
-                        // Show sprint tasks only on their due date
-                        const sprintTasksToday = tasks.filter(t => !t._isQuick && t.sprintId === s.id && normalizeDate(t.endDate) === dateStr);
-                        sprintTasksToday.sort((a, b) => getPriorityScore(b.priority) - getPriorityScore(a.priority));
-
-                        return (
-                            <div key={`sprint-group-${s.id}`} style={{ marginBottom: '6px' }}>
-                                <div style={{ background: SPRINT_COLORS[s.id % SPRINT_COLORS.length], color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>
-                                    {s.name}
-                                </div>
-                                {sprintTasksToday.map(t => (
-                                    <div key={`st-${t.id}`} style={{
-                                        fontSize: '9.5px', marginLeft: '6px', marginTop: '2px', padding: '2px 4px', borderRadius: '0 4px 4px 0',
-                                        background: t.priority === 'High' ? '#fee2e2' : '#f1f5f9',
-                                        color: t.completed ? 'var(--text-muted)' : (t.priority === 'High' ? '#b91c1c' : 'var(--text-main)'),
-                                        borderLeft: `2px solid ${t.priority === 'High' ? '#ef4444' : '#cbd5e1'}`,
-                                        textDecoration: t.completed ? 'line-through' : 'none',
-                                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                    }}>
-                                        {t.priority === 'High' ? '🔥 ' : '↳ '}{t.name}
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    })}
-                </div>
-            );
-        }
-
-        return (
-            <div style={{ padding: '20px', background: 'var(--white)', borderRadius: '12px', border: '1px solid var(--border)', marginTop: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2 style={{ margin: 0, fontSize: '20px' }}>{monthNames[month]} {year}</h2>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="btn-secondary" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}>&lt; Prev</button>
-                        <button className="btn-secondary" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}>Next &gt;</button>
-                    </div>
-                </div>
-                <div style={{ overflowX: 'auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', minWidth: '560px' }}>
-                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                            <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px' }}>{d}</div>
-                        ))}
-                        {calendarCells}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     const activeBlock = blocks.find(b => b.id === activeBlockId);
     let modalHabits = []; let modalTasks = [];
     if (activeBlock) {
@@ -220,20 +119,6 @@ const ScheduleDashboard = ({ userId }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}>
-                <div className="view-toggle">
-                    <button type="button" className={`toggle-btn ${viewMode === 'schedule' ? 'active' : ''}`} onClick={() => setViewMode('schedule')}>
-                        <svg className="toggle-icon" style={{ marginRight: '8px' }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        Schedule Grid
-                    </button>
-                    <button type="button" className={`toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`} onClick={() => setViewMode('calendar')}>
-                        <svg className="toggle-icon" style={{ marginRight: '8px' }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
-                        Monthly Calendar
-                    </button>
-                </div>
-            </div>
-
-            {viewMode === 'calendar' ? renderCalendar() : (
                 <div className="viewport-container-schedule" style={{ '--visible-hours': visibleHours, flex: 1 }}>
                     <div className="schedule-toolbar">
                         <span className="toolbar-label" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Scale:</span>
@@ -331,7 +216,6 @@ const ScheduleDashboard = ({ userId }) => {
                     )}
                     {isFormModalOpen && <div className="modal-overlay"><ScheduleBlockForm userId={userId} initialData={formModalData} onClose={() => { setIsFormModalOpen(false); fetchData(); }} /></div>}
                 </div>
-            )}
         </div>
     );
 };
