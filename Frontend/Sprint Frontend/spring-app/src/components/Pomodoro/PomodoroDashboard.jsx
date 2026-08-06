@@ -126,7 +126,7 @@ const PomodoroDashboard = ({ userId }) => {
         <div className="pomo-container">
             <div className="pomo-header" style={{ flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0 }}>{mode === 'FOCUS' ? 'Pomodoro (Strict Mode)' : 'Break Time'}</h2>
+                    <h2 style={{ margin: 0 }}>{mode === 'FOCUS' ? 'Pomodoro' : 'Break Time'}</h2>
                     {focusStreak > 0 && (
                         <div style={{ background: '#ffedd5', color: '#ea580c', padding: '4px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             🔥 Streak: {focusStreak}
