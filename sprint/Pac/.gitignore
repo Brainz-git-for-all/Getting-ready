@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# ─── Secrets — NEVER commit these ───────────────────────────
+application.properties
+application-local.properties
+application-prod.properties
+*.env
+.env
+.env.local
+.env.production
+
+
+# ─── Node / Frontend ─────────────────────────────────────────
+node_modules/
+dist/
+.vite/

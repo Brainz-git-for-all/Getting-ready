@@ -4,8 +4,10 @@ import { scheduleBlockService, categoryService } from '../../api';
 import { customAlert } from '../AlertSystem';
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
-// Pool of nice colors for auto-generated categories
 const COLORS = ['#4f46e5', '#059669', '#e11d48', '#d97706', '#7c3aed', '#0891b2', '#c026d3', '#2563eb'];
+
+const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const minsToTime = (mins) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
 
 const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
     const [categoryOptions, setCategoryOptions] = useState([]);
@@ -71,6 +73,49 @@ const ScheduleBlockForm = ({ userId, initialData, onClose }) => {
                 };
                 await scheduleBlockService.update(initialData.id, payload);
             } else {
+                const newStartMins = timeToMins(formData.startTime);
+                const newEndMins = timeToMins(formData.endTime);
+
+                // For each selected day, push any blocks that would be overlapped by the new block
+                for (const day of selectedDays) {
+                    const res = await scheduleBlockService.getByUserAndDay(userId, day);
+                    const dayBlocks = (res.data || [])
+                        .filter(b => b.startTime < b.endTime) // skip overnight blocks
+                        .map(b => ({ ...b, startTime: b.startTime.substring(0, 5), endTime: b.endTime.substring(0, 5) }))
+                        .filter(b => timeToMins(b.startTime) >= newStartMins)
+                        .sort((a, b) => timeToMins(a.startTime) - timeToMins(b.startTime));
+
+                    let currentEnd = newEndMins;
+                    const pushUpdates = [];
+                    for (const block of dayBlocks) {
+                        const bStart = timeToMins(block.startTime);
+                        const bEnd = timeToMins(block.endTime);
+                        if (bStart < currentEnd) {
+                            const pushed = currentEnd - bStart;
+                            const pushedStart = bStart + pushed;
+                            const pushedEnd = bEnd + pushed;
+                            if (pushedEnd > 1439) break; // stop if cascade would go past 23:59
+                            pushUpdates.push({ block, pushedStart, pushedEnd });
+                            currentEnd = pushedEnd;
+                        } else {
+                            break; // no more overlaps, cascade stops
+                        }
+                    }
+
+                    // Push existing blocks first so the backend won't reject the new block for overlap
+                    await Promise.all(pushUpdates.map(({ block, pushedStart, pushedEnd }) =>
+                        scheduleBlockService.update(block.id, {
+                            day: block.day,
+                            startTime: `${minsToTime(pushedStart)}:00`,
+                            endTime: `${minsToTime(pushedEnd)}:00`,
+                            remindEnabled: block.remindEnabled,
+                            remindOffsetMinutes: block.remindOffsetMinutes,
+                            user: { id: userId },
+                            category: { id: block.category?.id }
+                        })
+                    ));
+                }
+
                 const payloads = selectedDays.map(d => ({
                     day: d, startTime: `${formData.startTime}:00`, endTime: `${formData.endTime}:00`,
                     remindEnabled: formData.remindEnabled, remindOffsetMinutes: formData.remindOffsetMinutes,
